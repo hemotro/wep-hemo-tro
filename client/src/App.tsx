@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import Live from "./pages/Live";
 import Search from "./pages/Search";
 import Account from "./pages/Account";
+import SeriesDetail from "./pages/SeriesDetail";
 import BottomNav from "./components/BottomNav";
 import AppHeader from "./components/AppHeader";
 
@@ -18,6 +19,7 @@ function Router() {
       <Route path={"/live"} component={Live} />
       <Route path={"/search"} component={Search} />
       <Route path={"/account"} component={Account} />
+      <Route path={"/series/:id"} component={SeriesDetail} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

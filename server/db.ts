@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,59 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// المسلسلات والحلقات
+export async function getAllSeries() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(series).orderBy(desc(series.createdAt));
+}
+
+export async function getSeriesById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(series).where(eq(series.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createSeries(data: InsertSeries) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(series).values(data);
+  return result;
+}
+
+export async function getEpisodesBySeriesId(seriesId: number, season?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  if (season !== undefined) {
+    return await db.select().from(episodes)
+      .where(and(eq(episodes.seriesId, seriesId), eq(episodes.season, season)))
+      .orderBy(episodes.episodeNumber);
+  }
+  
+  return await db.select().from(episodes)
+    .where(eq(episodes.seriesId, seriesId))
+    .orderBy(episodes.season, episodes.episodeNumber);
+}
+
+export async function getEpisodeById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(episodes).where(eq(episodes.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createEpisode(data: InsertEpisode) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(episodes).values(data);
+  return result;
+}
+
+export async function createMultipleEpisodes(data: InsertEpisode[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(episodes).values(data);
+  return result;
+}

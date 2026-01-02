@@ -25,4 +25,46 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+/**
+ * جدول المسلسلات
+ */
+export const series = mysqlTable("series", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  titleAr: varchar("titleAr", { length: 255 }).notNull(),
+  description: text("description"),
+  descriptionAr: text("descriptionAr"),
+  genre: varchar("genre", { length: 255 }),
+  posterUrl: varchar("posterUrl", { length: 500 }),
+  totalSeasons: int("totalSeasons").default(1),
+  currentSeason: int("currentSeason").default(1),
+  totalEpisodes: int("totalEpisodes").default(0),
+  rating: varchar("rating", { length: 10 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Series = typeof series.$inferSelect;
+export type InsertSeries = typeof series.$inferInsert;
+
+/**
+ * جدول الحلقات
+ */
+export const episodes = mysqlTable("episodes", {
+  id: int("id").autoincrement().primaryKey(),
+  seriesId: int("seriesId").notNull(),
+  season: int("season").notNull(),
+  episodeNumber: int("episodeNumber").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  titleAr: varchar("titleAr", { length: 255 }).notNull(),
+  description: text("description"),
+  descriptionAr: text("descriptionAr"),
+  videoUrl: varchar("videoUrl", { length: 500 }).notNull(),
+  duration: int("duration"),
+  releaseDate: timestamp("releaseDate"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Episode = typeof episodes.$inferSelect;
+export type InsertEpisode = typeof episodes.$inferInsert;

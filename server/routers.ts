@@ -2,9 +2,10 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
+import { z } from "zod";
+import { getAllSeries, getSeriesById, getEpisodesBySeriesId, getEpisodeById } from "./db";
 
 export const appRouter = router({
-    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
@@ -17,12 +18,32 @@ export const appRouter = router({
     }),
   }),
 
-  // TODO: add feature routers here, e.g.
-  // todo: router({
-  //   list: protectedProcedure.query(({ ctx }) =>
-  //     db.getUserTodos(ctx.user.id)
-  //   ),
-  // }),
+  series: router({
+    list: publicProcedure.query(async () => {
+      return await getAllSeries();
+    }),
+
+    getById: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await getSeriesById(input.id);
+      }),
+
+    getEpisodes: publicProcedure
+      .input(z.object({ 
+        seriesId: z.number(),
+        season: z.number().optional()
+      }))
+      .query(async ({ input }) => {
+        return await getEpisodesBySeriesId(input.seriesId, input.season);
+      }),
+
+    getEpisode: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await getEpisodeById(input.id);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
