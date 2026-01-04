@@ -1,4 +1,6 @@
 import { trpc } from "@/lib/trpc";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Play } from "lucide-react";
 
@@ -27,44 +29,23 @@ export default function Home() {
     );
   }
 
-  const getBannerUrl = (titleAr: string) => {
-    if (titleAr === "تخاريف") return "/takhareef-banner.jpg";
-    return null;
-  };
-
   return (
     <div className="flex-1 pb-20">
-      <div className="px-0 py-0">
-        <h1 className="text-3xl font-bold text-foreground px-4 py-6">المسلسلات</h1>
+      <div className="px-4 py-6">
+        <h1 className="text-3xl font-bold text-foreground mb-6">المسلسلات</h1>
         
-        <div className="space-y-4">
-          {seriesList.map((series) => {
-            const bannerUrl = getBannerUrl(series.titleAr);
-            
-            return (
-              <Link key={series.id} href={`/series/${series.id}`}>
-                <a className="block">
-                  {bannerUrl ? (
-                    <div className="relative group cursor-pointer overflow-hidden">
-                      <img
-                        src={bannerUrl}
-                        alt={series.titleAr}
-                        className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors flex items-center justify-center">
-                        <div className="text-center">
-                          <Play className="w-16 h-16 text-white mx-auto mb-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                          <p className="text-white text-lg font-bold">{series.titleAr}</p>
-                          <p className="text-white/80 text-sm">{series.genre}</p>
-                          <p className="text-white/70 text-xs mt-2">{series.totalEpisodes} حلقة</p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="bg-gradient-to-r from-primary/20 to-background p-6 mx-4 rounded-lg border border-border hover:border-primary transition-colors">
-                      <h2 className="text-2xl font-bold text-foreground mb-2">{series.titleAr}</h2>
-                      <p className="text-muted-foreground mb-3">{series.genre}</p>
-                      <div className="flex justify-between items-center">
+        <div className="grid grid-cols-1 gap-4">
+          {seriesList.map((series) => (
+            <Link key={series.id} href={`/series/${series.id}`}>
+              <a>
+                <Card className="bg-card border-border hover:border-primary transition-colors cursor-pointer overflow-hidden">
+                  <div className="bg-gradient-to-r from-primary/20 to-background p-4">
+                    <CardHeader className="p-0 mb-3">
+                      <CardTitle className="text-2xl text-foreground">{series.titleAr}</CardTitle>
+                      <CardDescription className="text-muted-foreground">{series.genre}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="flex justify-between items-center mb-3">
                         <span className="text-sm text-muted-foreground">
                           {series.totalEpisodes} حلقة
                         </span>
@@ -72,12 +53,16 @@ export default function Home() {
                           الموسم {series.currentSeason}
                         </span>
                       </div>
-                    </div>
-                  )}
-                </a>
-              </Link>
-            );
-          })}
+                      <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+                        <Play className="w-4 h-4 mr-2" />
+                        شاهد الآن
+                      </Button>
+                    </CardContent>
+                  </div>
+                </Card>
+              </a>
+            </Link>
+          ))}
         </div>
       </div>
     </div>
