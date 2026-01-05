@@ -1,8 +1,7 @@
 import { useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { Play, ChevronDown } from "lucide-react";
+import { Play } from "lucide-react";
 
 export default function SeriesDetail() {
   const { id } = useParams<{ id: string }>();
@@ -43,79 +42,79 @@ export default function SeriesDetail() {
 
   return (
     <div className="flex-1 pb-20">
-      {/* البانر والفيديو */}
-      <div className="relative w-full bg-background">
-        {/* الصورة البانر */}
-        {bannerUrl && (
-          <div className="relative w-full h-64 overflow-hidden">
-            <img
-              src={bannerUrl}
-              alt={series.titleAr}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
-          </div>
-        )}
-
-        {/* مشغل الفيديو */}
-        {currentEpisode && (
-          <div className="w-full aspect-video bg-black">
-            <iframe
-              width="100%"
-              height="100%"
-              src={getYoutubeEmbedUrl(currentEpisode.videoUrl)}
-              title={`${series.titleAr} - الحلقة ${currentEpisode.episodeNumber}`}
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="w-full h-full"
-            ></iframe>
-          </div>
-        )}
-
-        {/* معلومات المسلسل والحلقة الحالية */}
-        <div className="px-4 py-4 border-b border-border">
-          <h1 className="text-2xl font-bold text-foreground mb-2">{series.titleAr}</h1>
-          <p className="text-primary text-sm mb-3">{series.genre}</p>
-          {currentEpisode && (
-            <div className="bg-background/50 rounded-lg p-3">
-              <p className="text-foreground font-semibold mb-1">الحلقة {currentEpisode.episodeNumber}</p>
-              <p className="text-muted-foreground text-sm">{series.totalEpisodes} حلقة</p>
-            </div>
-          )}
+      {/* البانر */}
+      {bannerUrl && (
+        <div className="relative w-full h-64 overflow-hidden">
+          <img
+            src={bannerUrl}
+            alt={series.titleAr}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
         </div>
+      )}
+
+      {/* مشغل الفيديو الحالي */}
+      {currentEpisode && (
+        <div className="w-full aspect-video bg-black">
+          <iframe
+            width="100%"
+            height="100%"
+            src={getYoutubeEmbedUrl(currentEpisode.videoUrl)}
+            title={`${series.titleAr} - الحلقة ${currentEpisode.episodeNumber}`}
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="w-full h-full"
+          ></iframe>
+        </div>
+      )}
+
+      {/* معلومات المسلسل والحلقة */}
+      <div className="px-4 py-4 border-b border-border">
+        <h1 className="text-2xl font-bold text-foreground mb-2">{series.titleAr}</h1>
+        <p className="text-primary text-sm mb-2">{series.genre}</p>
+        {currentEpisode && (
+          <div>
+            <p className="text-foreground font-semibold">الحلقة {currentEpisode.episodeNumber}</p>
+            <p className="text-muted-foreground text-sm">من {series.totalEpisodes} حلقة</p>
+          </div>
+        )}
       </div>
 
       {/* قائمة الحلقات */}
       <div className="px-4 py-6">
-        <h2 className="text-lg font-bold text-foreground mb-4 flex items-center">
-          <ChevronDown className="w-5 h-5 mr-2" />
-          الحلقات
-        </h2>
+        <h2 className="text-lg font-bold text-foreground mb-4">الحلقات</h2>
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           {episodes && episodes.length > 0 ? (
             episodes.map((episode) => (
               <button
                 key={episode.id}
                 onClick={() => setSelectedEpisode(episode.episodeNumber)}
-                className={`w-full p-4 rounded-lg border-2 transition-all text-right ${
+                className={`w-full p-3 rounded-lg border-2 transition-all text-right flex items-center gap-3 ${
                   selectedEpisode === episode.episodeNumber
                     ? "border-primary bg-primary/10"
-                    : "border-border bg-background hover:border-primary/50"
+                    : "border-border bg-background/50 hover:border-primary/50"
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="font-semibold text-foreground">الحلقة {episode.episodeNumber}</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {episode.title || `الحلقة ${episode.episodeNumber}`}
-                    </p>
-                  </div>
-                  {selectedEpisode === episode.episodeNumber && (
-                    <Play className="w-5 h-5 text-primary ml-3 flex-shrink-0" />
-                  )}
+                {/* رقم الحلقة */}
+                <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
+                  <span className="font-bold text-foreground text-sm">{episode.episodeNumber}</span>
                 </div>
+
+                {/* معلومات الحلقة */}
+                <div className="flex-1">
+                  <p className="font-semibold text-foreground text-sm">الحلقة {episode.episodeNumber}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {episode.title || `الحلقة ${episode.episodeNumber}`}
+                  </p>
+                </div>
+
+                {/* أيقونة التشغيل */}
+                {selectedEpisode === episode.episodeNumber && (
+                  <Play className="w-5 h-5 text-primary flex-shrink-0" fill="currentColor" />
+                )}
               </button>
             ))
           ) : (
