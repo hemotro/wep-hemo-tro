@@ -1,15 +1,14 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LogOut, User } from "lucide-react";
-import { getLoginUrl } from "@/const";
+import { trpc } from "@/lib/trpc";
+import { useLocation } from "wouter";
+import { LogOut, User, Mail } from "lucide-react";
 
-/**
- * صفحة حسابي
- * تعرض معلومات المستخدم وخيارات تسجيل الدخول والخروج
- */
 export default function Account() {
-  const { user, loading, isAuthenticated, logout } = useAuth();
+  const { user, logout, isAuthenticated, loading } = useAuth();
+  const [, setLocation] = useLocation();
+  const logoutMutation = trpc.auth.logout.useMutation();
 
   if (loading) {
     return (
@@ -22,24 +21,20 @@ export default function Account() {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !user) {
     return (
       <div className="flex-1 pb-20 flex items-center justify-center px-4">
-        <Card className="w-full max-w-sm bg-card border-border">
+        <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-foreground">تسجيل الدخول</CardTitle>
-            <CardDescription className="text-muted-foreground">
-              سجل الدخول لعرض حسابك الشخصي
-            </CardDescription>
+            <CardTitle>تسجيل الدخول مطلوب</CardTitle>
+            <CardDescription>يرجى تسجيل الدخول للوصول إلى حسابك</CardDescription>
           </CardHeader>
           <CardContent>
             <Button
-              onClick={() => {
-                window.location.href = getLoginUrl();
-              }}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="w-full bg-primary hover:bg-primary/90"
+              onClick={() => setLocation("/login")}
             >
-              تسجيل الدخول عبر Manus
+              تسجيل الدخول
             </Button>
           </CardContent>
         </Card>
@@ -47,49 +42,58 @@ export default function Account() {
     );
   }
 
+  const handleLogout = async () => {
+    await logoutMutation.mutateAsync();
+    logout();
+    setLocation("/");
+  };
+
   return (
-    <div className="flex-1 pb-20">
-      <div className="px-4 py-6">
-        <Card className="bg-card border-border">
+    <div className="flex-1 pb-20 px-4 py-6">
+      <div className="max-w-md mx-auto space-y-6">
+        {/* معلومات الحساب */}
+        <Card>
           <CardHeader>
-            <CardTitle className="text-foreground flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2">
               <User className="w-5 h-5" />
-              حسابي
+              معلومات الحساب
             </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              معلومات حسابك الشخصي
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="bg-background rounded-lg p-4">
+            <div>
               <p className="text-sm text-muted-foreground mb-1">الاسم</p>
-              <p className="text-lg font-semibold text-foreground">{user?.name || "مستخدم"}</p>
+              <p className="text-foreground font-semibold">{user.name || "بدون اسم"}</p>
             </div>
 
-            {user?.email && (
-              <div className="bg-background rounded-lg p-4">
-                <p className="text-sm text-muted-foreground mb-1">البريد الإلكتروني</p>
-                <p className="text-lg font-semibold text-foreground">{user.email}</p>
-              </div>
-            )}
+            <div>
+              <p className="text-sm text-muted-foreground mb-1 flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                البريد الإلكتروني
+              </p>
+              <p className="text-foreground font-semibold">{user.email || "بدون بريد"}</p>
+            </div>
 
-            {user?.loginMethod && (
-              <div className="bg-background rounded-lg p-4">
-                <p className="text-sm text-muted-foreground mb-1">طريقة التسجيل</p>
-                <p className="text-lg font-semibold text-foreground capitalize">{user.loginMethod}</p>
-              </div>
-            )}
-
-            <Button
-              onClick={() => logout()}
-              variant="outline"
-              className="w-full border-border text-foreground hover:bg-background"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              تسجيل الخروج
-            </Button>
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">طريقة التسجيل</p>
+              <p className="text-foreground font-semibold">
+                {user.loginMethod === "email" && "البريد الإلكتروني"}
+                {user.loginMethod === "google" && "Google"}
+                {user.loginMethod === "manus" && "Manus"}
+              </p>
+            </div>
           </CardContent>
         </Card>
+
+        {/* تسجيل الخروج */}
+        <Button
+          variant="destructive"
+          className="w-full"
+          onClick={handleLogout}
+          disabled={logoutMutation.isPending}
+        >
+          <LogOut className="w-4 h-4 ml-2" />
+          {logoutMutation.isPending ? "جاري تسجيل الخروج..." : "تسجيل الخروج"}
+        </Button>
       </div>
     </div>
   );
