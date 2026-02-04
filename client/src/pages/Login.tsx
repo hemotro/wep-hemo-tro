@@ -4,43 +4,68 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Lock, Chrome } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [name, setName] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const registerMutation = trpc.auth.register.useMutation();
+  const loginMutation = trpc.auth.loginEmail.useMutation();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError("");
 
-    try {
-      const response = await fetch("/api/auth/email-login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, isSignUp }),
-      });
-
-      if (response.ok) {
-        setLocation("/");
-      } else {
-        const data = await response.json();
-        setError(data.message || "خطأ في المصادقة");
+    if (isSignUp) {
+      // تسجيل حساب جديد
+      if (!name.trim()) {
+        setError("يرجى إدخال الاسم");
+        return;
       }
-    } catch (err) {
-      setError("حدث خطأ في الاتصال");
-    } finally {
-      setIsLoading(false);
+
+      registerMutation.mutate(
+        { email, password, name },
+        {
+          onSuccess: () => {
+            toast.success("تم إنشاء الحساب بنجاح! يرجى تسجيل الدخول");
+            setIsSignUp(false);
+            setName("");
+            setEmail("");
+            setPassword("");
+          },
+          onError: (error: any) => {
+            setError(error.message || "فشل إنشاء الحساب");
+          },
+        }
+      );
+    } else {
+      // تسجيل الدخول
+      loginMutation.mutate(
+        { email, password },
+        {
+          onSuccess: () => {
+            toast.success("تم تسجيل الدخول بنجاح!");
+            setLocation("/");
+          },
+          onError: (error: any) => {
+            setError(error.message || "البريد الإلكتروني أو كلمة السر غير صحيحة");
+          },
+        }
+      );
     }
   };
 
   const handleGoogleLogin = () => {
     window.location.href = "/api/auth/google";
   };
+
+  const isLoading = registerMutation.isPending || loginMutation.isPending;
 
   return (
     <div className="flex-1 pb-20 flex items-center justify-center px-4 py-8">
@@ -54,7 +79,23 @@ export default function Login() {
 
         <CardContent className="space-y-6">
           {/* نموذج البريد الإلكتروني وكلمة السر */}
-          <form onSubmit={handleEmailLogin} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isSignUp && (
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  الاسم
+                </label>
+                <Input
+                  type="text"
+                  placeholder="أدخل اسمك"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required={isSignUp}
+                  disabled={isLoading}
+                />
+              </div>
+            )}
+
             <div>
               <label className="text-sm font-medium text-foreground mb-2 block">
                 البريد الإلكتروني
@@ -139,6 +180,9 @@ export default function Login() {
               onClick={() => {
                 setIsSignUp(!isSignUp);
                 setError("");
+                setName("");
+                setEmail("");
+                setPassword("");
               }}
               className="text-primary hover:underline font-medium"
             >

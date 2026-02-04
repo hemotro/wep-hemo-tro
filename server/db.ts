@@ -1,7 +1,8 @@
-import { eq, desc, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import bcrypt from 'bcrypt';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -89,59 +90,176 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// المسلسلات والحلقات
+// ===== نظام المصادقة الحقيقي =====
+
+/**
+ * تسجيل مستخدم جديد عبر البريد الإلكتروني وكلمة السر
+ */
+export async function registerUser(email: string, password: string, name: string) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  // التحقق من عدم وجود بريد مسجل بالفعل
+  const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  if (existingUser.length > 0) {
+    throw new Error("البريد الإلكتروني مسجل بالفعل");
+  }
+
+  // تشفير كلمة السر
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  // إنشاء مستخدم جديد
+  const result = await db.insert(users).values({
+    email,
+    password: hashedPassword,
+    name,
+    loginMethod: 'email',
+    role: 'user',
+    lastSignedIn: new Date(),
+  });
+
+  return result;
+}
+
+/**
+ * تسجيل الدخول عبر البريد الإلكتروني وكلمة السر
+ */
+export async function loginWithEmail(email: string, password: string) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  // البحث عن المستخدم
+  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  if (result.length === 0) {
+    throw new Error("البريد الإلكتروني أو كلمة السر غير صحيحة");
+  }
+
+  const user = result[0];
+
+  // التحقق من كلمة السر
+  if (!user.password) {
+    throw new Error("هذا الحساب لم يتم إنشاؤه عبر البريد الإلكتروني");
+  }
+
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
+    throw new Error("البريد الإلكتروني أو كلمة السر غير صحيحة");
+  }
+
+  // تحديث آخر وقت تسجيل دخول
+  await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, user.id));
+
+  return user;
+}
+
+/**
+ * البحث عن مستخدم عبر البريد الإلكتروني
+ */
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) {
+    return undefined;
+  }
+
+  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+/**
+ * البحث عن مستخدم عبر Google ID
+ */
+export async function getUserByGoogleId(googleId: string) {
+  const db = await getDb();
+  if (!db) {
+    return undefined;
+  }
+
+  const result = await db.select().from(users).where(eq(users.googleId, googleId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+/**
+ * إنشاء أو تحديث مستخدم Google
+ */
+export async function upsertGoogleUser(googleId: string, email: string, name: string) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  // البحث عن المستخدم الموجود
+  const existingUser = await getUserByGoogleId(googleId);
+  if (existingUser) {
+    // تحديث آخر وقت تسجيل دخول
+    await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, existingUser.id));
+    return existingUser;
+  }
+
+  // إنشاء مستخدم جديد
+  const result = await db.insert(users).values({
+    googleId,
+    email,
+    name,
+    loginMethod: 'google',
+    role: 'user',
+    lastSignedIn: new Date(),
+  });
+
+  const newUser = await getUserByGoogleId(googleId);
+  return newUser;
+}
+
+// ===== دوال المسلسلات والحلقات =====
+
 export async function getAllSeries() {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(series).orderBy(desc(series.createdAt));
+
+  return await db.select().from(series);
 }
 
 export async function getSeriesById(id: number) {
   const db = await getDb();
-  if (!db) return undefined;
-  const result = await db.select().from(series).where(eq(series.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
-}
+  if (!db) return null;
 
-export async function createSeries(data: InsertSeries) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const result = await db.insert(series).values(data);
-  return result;
+  const result = await db.select().from(series).where(eq(series.id, id)).limit(1);
+  return result.length > 0 ? result[0] : null;
 }
 
 export async function getEpisodesBySeriesId(seriesId: number, season?: number) {
   const db = await getDb();
   if (!db) return [];
-  
-  if (season !== undefined) {
+
+  if (season) {
     return await db.select().from(episodes)
-      .where(and(eq(episodes.seriesId, seriesId), eq(episodes.season, season)))
-      .orderBy(episodes.episodeNumber);
+      .where(eq(episodes.seriesId, seriesId) && eq(episodes.season, season));
   }
-  
-  return await db.select().from(episodes)
-    .where(eq(episodes.seriesId, seriesId))
-    .orderBy(episodes.season, episodes.episodeNumber);
+
+  return await db.select().from(episodes).where(eq(episodes.seriesId, seriesId));
 }
 
 export async function getEpisodeById(id: number) {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) return null;
+
   const result = await db.select().from(episodes).where(eq(episodes.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? result[0] : null;
 }
 
-export async function createEpisode(data: InsertEpisode) {
+export async function insertSeries(data: InsertSeries) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(episodes).values(data);
-  return result;
+
+  return await db.insert(series).values(data);
 }
 
-export async function createMultipleEpisodes(data: InsertEpisode[]) {
+export async function insertEpisode(data: InsertEpisode) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(episodes).values(data);
-  return result;
+
+  return await db.insert(episodes).values(data);
 }
