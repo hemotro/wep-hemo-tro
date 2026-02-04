@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode } from "../drizzle/schema";
 import { ENV } from './_core/env';
-import bcrypt from 'bcrypt';
+import bcrypt from "bcrypt";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -18,6 +18,8 @@ export async function getDb() {
   }
   return _db;
 }
+
+// ==================== المستخدمون ====================
 
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) {
@@ -90,20 +92,13 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// ===== نظام المصادقة الحقيقي =====
-
-/**
- * تسجيل مستخدم جديد عبر البريد الإلكتروني وكلمة السر
- */
 export async function registerUser(email: string, password: string, name: string) {
   const db = await getDb();
-  if (!db) {
-    throw new Error("Database not available");
-  }
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
 
-  // التحقق من عدم وجود بريد مسجل بالفعل
-  const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
-  if (existingUser.length > 0) {
+  // التحقق من عدم وجود البريد الإلكتروني
+  const existing = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  if (existing.length > 0) {
     throw new Error("البريد الإلكتروني مسجل بالفعل");
   }
 
@@ -115,34 +110,25 @@ export async function registerUser(email: string, password: string, name: string
     email,
     password: hashedPassword,
     name,
-    loginMethod: 'email',
-    role: 'user',
-    lastSignedIn: new Date(),
+    loginMethod: "email",
+    role: "user",
   });
 
   return result;
 }
 
-/**
- * تسجيل الدخول عبر البريد الإلكتروني وكلمة السر
- */
 export async function loginWithEmail(email: string, password: string) {
   const db = await getDb();
-  if (!db) {
-    throw new Error("Database not available");
-  }
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
 
-  // البحث عن المستخدم
   const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (result.length === 0) {
     throw new Error("البريد الإلكتروني أو كلمة السر غير صحيحة");
   }
 
   const user = result[0];
-
-  // التحقق من كلمة السر
   if (!user.password) {
-    throw new Error("هذا الحساب لم يتم إنشاؤه عبر البريد الإلكتروني");
+    throw new Error("البريد الإلكتروني أو كلمة السر غير صحيحة");
   }
 
   const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -150,70 +136,18 @@ export async function loginWithEmail(email: string, password: string) {
     throw new Error("البريد الإلكتروني أو كلمة السر غير صحيحة");
   }
 
-  // تحديث آخر وقت تسجيل دخول
-  await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, user.id));
-
   return user;
 }
 
-/**
- * البحث عن مستخدم عبر البريد الإلكتروني
- */
 export async function getUserByEmail(email: string) {
   const db = await getDb();
-  if (!db) {
-    return undefined;
-  }
+  if (!db) return undefined;
 
   const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
-/**
- * البحث عن مستخدم عبر Google ID
- */
-export async function getUserByGoogleId(googleId: string) {
-  const db = await getDb();
-  if (!db) {
-    return undefined;
-  }
-
-  const result = await db.select().from(users).where(eq(users.googleId, googleId)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
-}
-
-/**
- * إنشاء أو تحديث مستخدم Google
- */
-export async function upsertGoogleUser(googleId: string, email: string, name: string) {
-  const db = await getDb();
-  if (!db) {
-    throw new Error("Database not available");
-  }
-
-  // البحث عن المستخدم الموجود
-  const existingUser = await getUserByGoogleId(googleId);
-  if (existingUser) {
-    // تحديث آخر وقت تسجيل دخول
-    await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, existingUser.id));
-    return existingUser;
-  }
-
-  // إنشاء مستخدم جديد
-  const result = await db.insert(users).values({
-    googleId,
-    email,
-    name,
-    loginMethod: 'google',
-    role: 'user',
-    lastSignedIn: new Date(),
-  });
-
-  const newUser = await getUserByGoogleId(googleId);
-  return newUser;
-}
-
-// ===== دوال المسلسلات والحلقات =====
+// ==================== المسلسلات ====================
 
 export async function getAllSeries() {
   const db = await getDb();
@@ -230,16 +164,45 @@ export async function getSeriesById(id: number) {
   return result.length > 0 ? result[0] : null;
 }
 
+export async function createSeries(data: InsertSeries) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  const result = await db.insert(series).values(data);
+  return result;
+}
+
+export async function updateSeries(id: number, data: Partial<InsertSeries>) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  await db.update(series).set(data).where(eq(series.id, id));
+  return await getSeriesById(id);
+}
+
+export async function deleteSeries(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  // حذف جميع الحلقات أولاً
+  await db.delete(episodes).where(eq(episodes.seriesId, id));
+
+  // ثم حذف المسلسل
+  await db.delete(series).where(eq(series.id, id));
+  return { success: true };
+}
+
+// ==================== الحلقات ====================
+
 export async function getEpisodesBySeriesId(seriesId: number, season?: number) {
   const db = await getDb();
   if (!db) return [];
 
+  let query = db.select().from(episodes).where(eq(episodes.seriesId, seriesId));
   if (season) {
-    return await db.select().from(episodes)
-      .where(eq(episodes.seriesId, seriesId) && eq(episodes.season, season));
+    query = db.select().from(episodes).where(eq(episodes.seriesId, seriesId));
   }
-
-  return await db.select().from(episodes).where(eq(episodes.seriesId, seriesId));
+  return await query;
 }
 
 export async function getEpisodeById(id: number) {
@@ -250,16 +213,26 @@ export async function getEpisodeById(id: number) {
   return result.length > 0 ? result[0] : null;
 }
 
-export async function insertSeries(data: InsertSeries) {
+export async function createEpisode(data: InsertEpisode) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
 
-  return await db.insert(series).values(data);
+  const result = await db.insert(episodes).values(data);
+  return result;
 }
 
-export async function insertEpisode(data: InsertEpisode) {
+export async function updateEpisode(id: number, data: Partial<InsertEpisode>) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
 
-  return await db.insert(episodes).values(data);
+  await db.update(episodes).set(data).where(eq(episodes.id, id));
+  return await getEpisodeById(id);
+}
+
+export async function deleteEpisode(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  await db.delete(episodes).where(eq(episodes.id, id));
+  return { success: true };
 }

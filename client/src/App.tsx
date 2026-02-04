@@ -10,6 +10,7 @@ import Search from "./pages/Search";
 import Account from "./pages/Account";
 import SeriesDetail from "./pages/SeriesDetail";
 import Login from "./pages/Login";
+import Admin from "./pages/Admin";
 import BottomNav from "./components/BottomNav";
 import AppHeader from "./components/AppHeader";
 
@@ -21,6 +22,7 @@ function Router() {
       <Route path={"/live"} component={Live} />
       <Route path={"/search"} component={Search} />
       <Route path={"/account"} component={Account} />
+      <Route path={"/admin"} component={Admin} />
       <Route path={"/series/:id"} component={SeriesDetail} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
