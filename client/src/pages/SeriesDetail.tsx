@@ -34,7 +34,7 @@ export default function SeriesDetail() {
 
   const currentEpisode = episodes?.find(ep => ep.episodeNumber === selectedEpisode);
   
-  // الحصول على صورة البانر من قاعدة البيانات أو الصورة الافتراضية
+  // الحصول على صورة البانر من قاعدة البيانات
   const bannerImage = images.find(img => img.imageType === "banner" && img.isDefault);
   const bannerUrl = bannerImage?.imageUrl || (series.titleAr === "تخاريف" ? "/takhareef-banner.jpg" : null);
 
@@ -47,25 +47,16 @@ export default function SeriesDetail() {
 
   return (
     <div className="flex-1 pb-20">
-      {/* البانر - محسّن للهاتف والكمبيوتر */}
+      {/* البانر - تصميم بسيط وسهل */}
       {bannerUrl && (
-        <div className="relative w-full bg-black overflow-hidden">
-          {/* الحاوية الرئيسية للبانر */}
-          <div className="relative w-full aspect-video md:aspect-auto md:h-96 lg:h-[500px]">
-            <img
-              src={bannerUrl}
-              alt={series.titleAr}
-              className="w-full h-full object-cover"
-            />
-            {/* تدرج لونى من الأسفل */}
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent"></div>
-            
-            {/* معلومات المسلسل على البانر */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
-              <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-2">{series.titleAr}</h1>
-              <p className="text-primary text-sm md:text-base mb-2">{series.genre}</p>
-            </div>
-          </div>
+        <div className="relative w-full bg-black">
+          <img
+            src={bannerUrl}
+            alt={series.titleAr}
+            className="w-full h-48 sm:h-64 md:h-80 lg:h-96 object-cover"
+          />
+          {/* تدرج لوني */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent"></div>
         </div>
       )}
 
@@ -85,16 +76,12 @@ export default function SeriesDetail() {
         </div>
       )}
 
-      {/* معلومات المسلسل والحلقة */}
+      {/* معلومات المسلسل */}
       <div className="px-4 py-4 border-b border-border">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
-            {!bannerUrl && (
-              <>
-                <h1 className="text-2xl font-bold text-foreground mb-2">{series.titleAr}</h1>
-                <p className="text-primary text-sm mb-2">{series.genre}</p>
-              </>
-            )}
+            <h1 className="text-2xl font-bold text-foreground mb-2">{series.titleAr}</h1>
+            <p className="text-primary text-sm mb-2">{series.genre}</p>
           </div>
           <FavoriteButton seriesId={seriesId} />
         </div>
