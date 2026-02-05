@@ -1,7 +1,8 @@
-import { useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { useState } from "react";
-import { Play } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Play, Heart } from "lucide-react";
+import { useParams } from "wouter";
+import { toast } from "sonner";
 
 export default function SeriesDetail() {
   const { id } = useParams<{ id: string }>();
@@ -72,14 +73,20 @@ export default function SeriesDetail() {
 
       {/* معلومات المسلسل والحلقة */}
       <div className="px-4 py-4 border-b border-border">
-        <h1 className="text-2xl font-bold text-foreground mb-2">{series.titleAr}</h1>
-        <p className="text-primary text-sm mb-2">{series.genre}</p>
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold text-foreground mb-2">{series.titleAr}</h1>
+            <p className="text-primary text-sm mb-2">{series.genre}</p>
+          </div>
+          <FavoriteButton seriesId={seriesId} />
+        </div>
         {currentEpisode && (
           <div>
             <p className="text-foreground font-semibold">الحلقة {currentEpisode.episodeNumber}</p>
             <p className="text-muted-foreground text-sm">من {series.totalEpisodes} حلقة</p>
           </div>
         )}
+        <RatingDisplay seriesId={seriesId} />
       </div>
 
       {/* قائمة الحلقات */}
@@ -121,6 +128,157 @@ export default function SeriesDetail() {
             <p className="text-muted-foreground text-center py-8">لا توجد حلقات متاحة</p>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// مكون زر المفضلة
+function FavoriteButton({ seriesId }: { seriesId: number }) {
+  const [isFav, setIsFav] = useState(false);
+  const checkFav = trpc.favorites.isFavorite.useQuery({ seriesId });
+  const addFav = trpc.favorites.add.useMutation();
+  const removeFav = trpc.favorites.remove.useMutation();
+
+  useEffect(() => {
+    if (checkFav.data !== undefined) {
+      setIsFav(checkFav.data);
+    }
+  }, [checkFav.data]);
+
+  const handleToggleFavorite = async () => {
+    try {
+      if (isFav) {
+        await removeFav.mutateAsync({ seriesId });
+        setIsFav(false);
+        toast.success("تمت إزالة المسلسل من المفضلة");
+      } else {
+        await addFav.mutateAsync({ seriesId });
+        setIsFav(true);
+        toast.success("تمت إضافة المسلسل إلى المفضلة");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "حدث خطأ");
+    }
+  };
+
+  return (
+    <button
+      onClick={handleToggleFavorite}
+      className={`p-2 rounded-lg transition-all ${
+        isFav
+          ? "bg-red-500/20 text-red-500 hover:bg-red-500/30"
+          : "bg-muted text-muted-foreground hover:bg-muted/80"
+      }`}
+      disabled={addFav.isPending || removeFav.isPending}
+    >
+      <Heart className="w-6 h-6" fill={isFav ? "currentColor" : "none"} />
+    </button>
+  );
+}
+
+// مكون عرض التقييمات
+function RatingDisplay({ seriesId }: { seriesId: number }) {
+  const [userRating, setUserRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [showComment, setShowComment] = useState(false);
+
+  const averageRating = trpc.ratings.getAverageRating.useQuery({ seriesId });
+  const getUserRating = trpc.ratings.getUserRating.useQuery({ seriesId });
+  const addRating = trpc.ratings.addOrUpdate.useMutation();
+
+  useEffect(() => {
+    if (getUserRating.data) {
+      setUserRating(getUserRating.data.rating);
+      setComment(getUserRating.data.comment || "");
+    }
+  }, [getUserRating.data]);
+
+  const handleRating = async (rating: number) => {
+    try {
+      await addRating.mutateAsync({
+        seriesId,
+        rating,
+        comment: comment || undefined,
+      });
+      setUserRating(rating);
+      toast.success("تم حفظ التقييم بنجاح");
+      setShowComment(false);
+      getUserRating.refetch();
+      averageRating.refetch();
+    } catch (error: any) {
+      toast.error(error.message || "فشل حفظ التقييم");
+    }
+  };
+
+  return (
+    <div className="mt-4 pt-4 border-t border-border">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <p className="text-sm text-muted-foreground mb-1">متوسط التقييم</p>
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <span
+                  key={star}
+                  className={`text-lg ${
+                    star <= Math.round(averageRating.data || 0)
+                      ? "text-yellow-500"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+            <span className="text-sm text-muted-foreground">
+              {averageRating.data ? averageRating.data.toFixed(1) : "0.0"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p className="text-sm text-muted-foreground mb-2">تقييمك</p>
+        <div className="flex gap-2 mb-3">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              onClick={() => handleRating(star)}
+              onMouseEnter={() => setHoverRating(star)}
+              onMouseLeave={() => setHoverRating(0)}
+              className="text-2xl transition-all hover:scale-110"
+            >
+              <span
+                className={`${
+                  star <= (hoverRating || userRating)
+                    ? "text-yellow-500"
+                    : "text-muted-foreground"
+                }`}
+              >
+                ★
+              </span>
+            </button>
+          ))}
+        </div>
+        {userRating > 0 && (
+          <button
+            onClick={() => setShowComment(!showComment)}
+            className="text-xs text-primary hover:underline mb-2"
+          >
+            {showComment ? "إخفاء التعليق" : "إضافة تعليق"}
+          </button>
+        )}
+        {showComment && (
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="أضف تعليقك هنا..."
+            className="w-full p-2 rounded-lg bg-muted text-foreground text-sm resize-none"
+            rows={3}
+          />
+        )}
       </div>
     </div>
   );

@@ -6,7 +6,9 @@ import { z } from "zod";
 import { 
   getAllSeries, getSeriesById, getEpisodesBySeriesId, getEpisodeById, 
   registerUser, loginWithEmail, createSeries, updateSeries, deleteSeries,
-  createEpisode, updateEpisode, deleteEpisode 
+  createEpisode, updateEpisode, deleteEpisode,
+  addFavorite, removeFavorite, getUserFavorites, isFavorite,
+  addOrUpdateRating, getSeriesRatings, getUserRating, getAverageRating
 } from "./db";
 import { TRPCError } from "@trpc/server";
 
@@ -256,6 +258,137 @@ export const appRouter = router({
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: error.message || "فشل حذف الحلقة",
+          });
+        }
+      }),
+  }),
+
+  // ==================== المفضلة ====================
+  favorites: router({
+    add: protectedProcedure
+      .input(z.object({ seriesId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          await addFavorite(ctx.user.id, input.seriesId);
+          return { success: true, message: "تمت إضافة المسلسل إلى المفضلة" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message || "فشل إضافة المسلسل إلى المفضلة",
+          });
+        }
+      }),
+
+    remove: protectedProcedure
+      .input(z.object({ seriesId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          await removeFavorite(ctx.user.id, input.seriesId);
+          return { success: true, message: "تمت إزالة المسلسل من المفضلة" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message || "فشل إزالة المسلسل من المفضلة",
+          });
+        }
+      }),
+
+    getAll: protectedProcedure
+      .query(async ({ ctx }) => {
+        try {
+          const favorites = await getUserFavorites(ctx.user.id);
+          return favorites;
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل جلب المفضلة",
+          });
+        }
+      }),
+
+    isFavorite: protectedProcedure
+      .input(z.object({ seriesId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        try {
+          const result = await isFavorite(ctx.user.id, input.seriesId);
+          return result;
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل التحقق من المفضلة",
+          });
+        }
+      }),
+  }),
+
+  // ==================== التقييمات ====================
+  ratings: router({
+    addOrUpdate: protectedProcedure
+      .input(z.object({
+        seriesId: z.number().optional(),
+        episodeId: z.number().optional(),
+        rating: z.number().min(1).max(5),
+        comment: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          if (!input.seriesId && !input.episodeId) {
+            throw new Error("يجب تحديد المسلسل أو الحلقة");
+          }
+          const result = await addOrUpdateRating({
+            userId: ctx.user.id,
+            seriesId: input.seriesId,
+            episodeId: input.episodeId,
+            rating: input.rating,
+            comment: input.comment,
+          });
+          return { success: true, data: result, message: "تم حفظ التقييم بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message || "فشل حفظ التقييم",
+          });
+        }
+      }),
+
+    getSeriesRatings: publicProcedure
+      .input(z.object({ seriesId: z.number() }))
+      .query(async ({ input }) => {
+        try {
+          const ratings = await getSeriesRatings(input.seriesId);
+          return ratings;
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل جلب التقييمات",
+          });
+        }
+      }),
+
+    getUserRating: protectedProcedure
+      .input(z.object({ seriesId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        try {
+          const rating = await getUserRating(ctx.user.id, input.seriesId);
+          return rating;
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل جلب التقييم",
+          });
+        }
+      }),
+
+    getAverageRating: publicProcedure
+      .input(z.object({ seriesId: z.number() }))
+      .query(async ({ input }) => {
+        try {
+          const average = await getAverageRating(input.seriesId);
+          return average;
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل جلب متوسط التقييم",
           });
         }
       }),

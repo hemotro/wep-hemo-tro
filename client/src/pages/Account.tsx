@@ -3,12 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
-import { LogOut, User, Mail, Settings } from "lucide-react";
+import { LogOut, User, Mail, Settings, Heart } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export default function Account() {
   const { user, logout, isAuthenticated, loading } = useAuth();
   const [, setLocation] = useLocation();
   const logoutMutation = trpc.auth.logout.useMutation();
+  const { data: favorites = [] } = trpc.favorites.getAll.useQuery();
 
   if (loading) {
     return (
@@ -84,6 +86,32 @@ export default function Account() {
           </CardContent>
         </Card>
 
+        {/* المفضلة */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Heart className="w-5 h-5" />
+              مسلسلاتي المفضلة
+            </CardTitle>
+            <CardDescription>
+              {favorites.length} مسلسل مفضل
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {favorites.length > 0 ? (
+              <div className="space-y-2">
+                {favorites.map((fav: any) => (
+                  <FavoriteSeries key={fav.id} seriesId={fav.seriesId} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-4">
+                لم تضف أي مسلسلات للمفضلة بعد
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
         {/* لوحة التحكم */}
         {user.role === "admin" && (
           <Button
@@ -107,5 +135,40 @@ export default function Account() {
         </Button>
       </div>
     </div>
+  );
+}
+
+// مكون عرض المسلسل المفضل
+function FavoriteSeries({ seriesId }: { seriesId: number }) {
+  const { data: series } = trpc.series.getById.useQuery({ id: seriesId });
+  const [, setLocation] = useLocation();
+
+  if (!series) {
+    return null;
+  }
+
+  return (
+    <button
+      onClick={() => setLocation(`/series/${seriesId}`)}
+      className="w-full p-3 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-right flex items-center gap-3"
+    >
+      {series.posterUrl ? (
+        <img
+          src={series.posterUrl}
+          alt={series.titleAr}
+          className="w-12 h-12 rounded object-cover flex-shrink-0"
+        />
+      ) : (
+        <div className="w-12 h-12 rounded bg-primary/20 flex items-center justify-center flex-shrink-0">
+          <Heart className="w-5 h-5 text-primary" />
+        </div>
+      )}
+      <div className="flex-1">
+        <p className="font-semibold text-foreground text-sm">{series.titleAr}</p>
+        {series.genre && (
+          <p className="text-xs text-muted-foreground">{series.genre}</p>
+        )}
+      </div>
+    </button>
   );
 }
