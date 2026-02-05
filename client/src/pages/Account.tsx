@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
-import { LogOut, User, Mail } from "lucide-react";
+import { LogOut, User, Mail, Settings } from "lucide-react";
 
 export default function Account() {
   const { user, logout, isAuthenticated, loading } = useAuth();
@@ -83,6 +83,17 @@ export default function Account() {
             </div>
           </CardContent>
         </Card>
+
+        {/* لوحة التحكم */}
+        {user.role === "admin" && (
+          <Button
+            className="w-full bg-primary hover:bg-primary/90"
+            onClick={() => setLocation("/admin")}
+          >
+            <Settings className="w-4 h-4 ml-2" />
+            لوحة التحكم
+          </Button>
+        )}
 
         {/* تسجيل الخروج */}
         <Button
