@@ -1,5 +1,6 @@
-import { Home, Radio, Search, User } from "lucide-react";
+import { Home, Radio, Search, User, Settings } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 /**
  * شريط التنقل السفلي
@@ -7,11 +8,13 @@ import { Link, useLocation } from "wouter";
  */
 export default function BottomNav() {
   const [location] = useLocation();
+  const { user } = useAuth();
 
   const navItems = [
     { href: "/", label: "الرئيسية", icon: Home },
     { href: "/live", label: "مباشر", icon: Radio },
     { href: "/search", label: "بحث", icon: Search },
+    ...(user?.role === "admin" ? [{ href: "/admin", label: "الإدارة", icon: Settings }] : []),
     { href: "/account", label: "حسابي", icon: User },
   ];
 
