@@ -10,6 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Plus, Trash2, Play, AlertCircle, Edit2 } from "lucide-react";
 import { useState } from "react";
+import { SeriesImagesManager } from "@/components/SeriesImagesManager";
 
 export default function Admin() {
   const { user } = useAuth();
@@ -197,9 +198,10 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="series" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList>
             <TabsTrigger value="series">المسلسلات</TabsTrigger>
             <TabsTrigger value="episodes">الحلقات</TabsTrigger>
+            <TabsTrigger value="images">إدارة الصور</TabsTrigger>
           </TabsList>
 
           {/* ==================== تبويب المسلسلات ==================== */}
@@ -431,6 +433,20 @@ export default function Admin() {
                   ))}
                 </div>
               </>
+            )}
+          </TabsContent>
+
+          {/* ==================== تبويب إدارة الصور ==================== */}
+          <TabsContent value="images" className="space-y-4">
+            {selectedSeries ? (
+              <SeriesImagesManager seriesId={selectedSeries} />
+            ) : (
+              <Card className="bg-secondary border-border">
+                <CardContent className="p-8 text-center">
+                  <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">اختر مسلسلاً من تبويب المسلسلات أولاً</p>
+                </CardContent>
+              </Card>
             )}
           </TabsContent>
         </Tabs>

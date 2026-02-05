@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -48,6 +48,24 @@ export const series = mysqlTable("series", {
 
 export type Series = typeof series.$inferSelect;
 export type InsertSeries = typeof series.$inferInsert;
+
+/**
+ * جدول صور المسلسلات
+ */
+export const seriesImages = mysqlTable("seriesImages", {
+  id: int("id").autoincrement().primaryKey(),
+  seriesId: int("seriesId").notNull(),
+  imageType: varchar("imageType", { length: 50 }).notNull(), // banner, poster, cover, etc
+  imageUrl: varchar("imageUrl", { length: 500 }).notNull(),
+  alt: varchar("alt", { length: 255 }),
+  isDefault: boolean("isDefault").default(false), // الصورة الافتراضية
+  displayOrder: int("displayOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SeriesImage = typeof seriesImages.$inferSelect;
+export type InsertSeriesImage = typeof seriesImages.$inferInsert;
 
 /**
  * جدول الحلقات

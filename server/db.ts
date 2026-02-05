@@ -1,6 +1,6 @@
 import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, ratings, InsertFavorite, InsertRating } from "../drizzle/schema";
+import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, ratings, InsertFavorite, InsertRating, seriesImages, InsertSeriesImage } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import bcrypt from "bcrypt";
 
@@ -350,4 +350,62 @@ export async function getAverageRating(seriesId: number) {
 
   const sum = result.reduce((acc, r) => acc + r.rating, 0);
   return sum / result.length;
+}
+
+
+// ==================== صور المسلسلات ====================
+
+export async function addSeriesImage(data: InsertSeriesImage) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  const result = await db.insert(seriesImages).values(data);
+  return result;
+}
+
+export async function getSeriesImages(seriesId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const result = await db.select().from(seriesImages).where(eq(seriesImages.seriesId, seriesId));
+  return result;
+}
+
+export async function getSeriesImageByType(seriesId: number, imageType: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.select().from(seriesImages).where(
+    and(eq(seriesImages.seriesId, seriesId), eq(seriesImages.imageType, imageType))
+  ).limit(1);
+
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function deleteSeriesImage(imageId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  await db.delete(seriesImages).where(eq(seriesImages.id, imageId));
+  return { success: true };
+}
+
+export async function updateSeriesImage(imageId: number, data: Partial<InsertSeriesImage>) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  await db.update(seriesImages).set(data).where(eq(seriesImages.id, imageId));
+  return { success: true };
+}
+
+export async function setDefaultImage(seriesId: number, imageId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  // إزالة الافتراضية من جميع الصور
+  await db.update(seriesImages).set({ isDefault: false }).where(eq(seriesImages.seriesId, seriesId));
+
+  // تعيين الصورة الجديدة كافتراضية
+  await db.update(seriesImages).set({ isDefault: true }).where(eq(seriesImages.id, imageId));
+  return { success: true };
 }

@@ -8,7 +8,8 @@ import {
   registerUser, loginWithEmail, createSeries, updateSeries, deleteSeries,
   createEpisode, updateEpisode, deleteEpisode,
   addFavorite, removeFavorite, getUserFavorites, isFavorite,
-  addOrUpdateRating, getSeriesRatings, getUserRating, getAverageRating
+  addOrUpdateRating, getSeriesRatings, getUserRating, getAverageRating,
+  addSeriesImage, getSeriesImages, deleteSeriesImage, setDefaultImage
 } from "./db";
 import { TRPCError } from "@trpc/server";
 
@@ -389,6 +390,77 @@ export const appRouter = router({
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
             message: error.message || "فشل جلب متوسط التقييم",
+          });
+        }
+      }),
+  }),
+
+  // ==================== صور المسلسلات ====================
+  seriesImages: router({
+    add: adminProcedure
+      .input(z.object({
+        seriesId: z.number(),
+        imageType: z.enum(["banner", "poster", "cover", "thumbnail"]),
+        imageUrl: z.string().url(),
+        alt: z.string().optional(),
+        isDefault: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const result = await addSeriesImage({
+            seriesId: input.seriesId,
+            imageType: input.imageType,
+            imageUrl: input.imageUrl,
+            alt: input.alt,
+            isDefault: input.isDefault || false,
+          });
+          return { success: true, message: "تمت إضافة الصورة بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message || "فشل إضافة الصورة",
+          });
+        }
+      }),
+
+    getAll: publicProcedure
+      .input(z.object({ seriesId: z.number() }))
+      .query(async ({ input }) => {
+        try {
+          const images = await getSeriesImages(input.seriesId);
+          return images;
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل جلب الصور",
+          });
+        }
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ imageId: z.number() }))
+      .mutation(async ({ input }) => {
+        try {
+          await deleteSeriesImage(input.imageId);
+          return { success: true, message: "تم حذف الصورة بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message || "فشل حذف الصورة",
+          });
+        }
+      }),
+
+    setDefault: adminProcedure
+      .input(z.object({ seriesId: z.number(), imageId: z.number() }))
+      .mutation(async ({ input }) => {
+        try {
+          await setDefaultImage(input.seriesId, input.imageId);
+          return { success: true, message: "تم تعيين الصورة الافتراضية" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message || "فشل تعيين الصورة الافتراضية",
           });
         }
       }),

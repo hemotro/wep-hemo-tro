@@ -11,6 +11,7 @@ export default function SeriesDetail() {
 
   const { data: series, isLoading: seriesLoading } = trpc.series.getById.useQuery({ id: seriesId });
   const { data: episodes, isLoading: episodesLoading } = trpc.series.getEpisodes.useQuery({ seriesId });
+  const { data: images = [] } = trpc.seriesImages.getAll.useQuery({ seriesId });
 
   if (seriesLoading) {
     return (
@@ -32,7 +33,10 @@ export default function SeriesDetail() {
   }
 
   const currentEpisode = episodes?.find(ep => ep.episodeNumber === selectedEpisode);
-  const bannerUrl = series.titleAr === "تخاريف" ? "/takhareef-banner.jpg" : null;
+  
+  // الحصول على صورة البانر من قاعدة البيانات أو الصورة الافتراضية
+  const bannerImage = images.find(img => img.imageType === "banner" && img.isDefault);
+  const bannerUrl = bannerImage?.imageUrl || (series.titleAr === "تخاريف" ? "/takhareef-banner.jpg" : null);
 
   // استخراج معرف الفيديو من رابط يوتيوب
   const getYoutubeEmbedUrl = (url: string) => {
@@ -43,15 +47,25 @@ export default function SeriesDetail() {
 
   return (
     <div className="flex-1 pb-20">
-      {/* البانر */}
+      {/* البانر - محسّن للهاتف والكمبيوتر */}
       {bannerUrl && (
-        <div className="relative w-full h-64 overflow-hidden">
-          <img
-            src={bannerUrl}
-            alt={series.titleAr}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
+        <div className="relative w-full bg-black overflow-hidden">
+          {/* الحاوية الرئيسية للبانر */}
+          <div className="relative w-full aspect-video md:aspect-auto md:h-96 lg:h-[500px]">
+            <img
+              src={bannerUrl}
+              alt={series.titleAr}
+              className="w-full h-full object-cover"
+            />
+            {/* تدرج لونى من الأسفل */}
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent"></div>
+            
+            {/* معلومات المسلسل على البانر */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
+              <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-2">{series.titleAr}</h1>
+              <p className="text-primary text-sm md:text-base mb-2">{series.genre}</p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -75,8 +89,12 @@ export default function SeriesDetail() {
       <div className="px-4 py-4 border-b border-border">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-foreground mb-2">{series.titleAr}</h1>
-            <p className="text-primary text-sm mb-2">{series.genre}</p>
+            {!bannerUrl && (
+              <>
+                <h1 className="text-2xl font-bold text-foreground mb-2">{series.titleAr}</h1>
+                <p className="text-primary text-sm mb-2">{series.genre}</p>
+              </>
+            )}
           </div>
           <FavoriteButton seriesId={seriesId} />
         </div>
