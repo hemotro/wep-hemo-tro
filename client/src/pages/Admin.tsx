@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Plus, Trash2, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Play, AlertCircle } from "lucide-react";
 
 export default function Admin() {
   const { user } = useAuth();
@@ -55,8 +55,37 @@ export default function Admin() {
   });
 
   const [posterFile, setPosterFile] = useState<File | null>(null);
+  const [youtubePreview, setYoutubePreview] = useState<string>("");
 
   // ==================== معالجات ====================
+
+  const extractYoutubeId = (url: string): string | null => {
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
+      /youtube\.com\/embed\/([^&\n?#]+)/,
+      /youtube\.com\/v\/([^&\n?#]+)/,
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+    return null;
+  };
+
+  const handleYoutubeUrlChange = (url: string) => {
+    setEpisodeForm({ ...episodeForm, videoUrl: url });
+    
+    const youtubeId = extractYoutubeId(url);
+    if (youtubeId) {
+      setYoutubePreview(`https://www.youtube.com/embed/${youtubeId}`);
+      toast.success("تم التعرف على رابط يوتيوب بنجاح!");
+    } else {
+      setYoutubePreview("");
+    }
+  };
 
   const handleAddSeries = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,8 +117,18 @@ export default function Admin() {
       toast.error("اختر مسلسل أولاً");
       return;
     }
-    if (!episodeForm.titleAr.trim() || !episodeForm.videoUrl.trim()) {
-      toast.error("اسم الحلقة ورابط الفيديو مطلوبان");
+    if (!episodeForm.titleAr.trim()) {
+      toast.error("اسم الحلقة مطلوب");
+      return;
+    }
+    if (!episodeForm.videoUrl.trim()) {
+      toast.error("رابط يوتيوب مطلوب");
+      return;
+    }
+
+    const youtubeId = extractYoutubeId(episodeForm.videoUrl);
+    if (!youtubeId) {
+      toast.error("رابط يوتيوب غير صحيح. تأكد من الرابط");
       return;
     }
 
@@ -102,7 +141,8 @@ export default function Admin() {
       });
       
       toast.success("تم إضافة الحلقة بنجاح!");
-      setEpisodeForm({ episodeNumber: "1", titleAr: "", videoUrl: "" });
+      setEpisodeForm({ episodeNumber: String(parseInt(episodeForm.episodeNumber) + 1), titleAr: "", videoUrl: "" });
+      setYoutubePreview("");
       setShowEpisodeForm(false);
       refetchEpisodes();
     } catch (error: any) {
@@ -256,54 +296,66 @@ export default function Admin() {
 
             {/* قائمة المسلسلات */}
             <div className="space-y-3">
-              <h2 className="text-lg font-semibold text-foreground">المسلسلات الموجودة</h2>
+              <h3 className="text-lg font-semibold text-foreground">المسلسلات الموجودة</h3>
               {seriesLoading ? (
                 <p className="text-muted-foreground">جاري التحميل...</p>
               ) : seriesList && seriesList.length > 0 ? (
-                seriesList.map((s) => (
-                  <div
-                    key={s.id}
-                    className="flex items-center justify-between p-4 bg-secondary rounded-lg border border-border hover:border-primary/50 transition"
+                seriesList.map((series) => (
+                  <Card
+                    key={series.id}
+                    className={`cursor-pointer transition-all ${
+                      selectedSeries === series.id
+                        ? "bg-primary/10 border-primary"
+                        : "bg-secondary border-border hover:border-primary/50"
+                    }`}
+                    onClick={() => setSelectedSeries(series.id)}
                   >
-                    <div className="flex-1">
-                      <p className="font-semibold text-foreground">{s.titleAr}</p>
-                      <p className="text-sm text-muted-foreground">{s.genre || "بدون تصنيف"}</p>
-                    </div>
-                    <div className="flex gap-2">
+                    <CardContent className="p-4 flex justify-between items-center">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground">{series.titleAr}</h4>
+                        <p className="text-sm text-muted-foreground">{series.genre}</p>
+                      </div>
                       <Button
-                        size="sm"
-                        variant={selectedSeries === s.id ? "default" : "outline"}
-                        onClick={() => setSelectedSeries(selectedSeries === s.id ? null : s.id)}
-                      >
-                        {selectedSeries === s.id ? "مخفي" : "عرض الحلقات"}
-                      </Button>
-                      <Button
-                        size="sm"
                         variant="destructive"
-                        onClick={() => handleDeleteSeries(s.id)}
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteSeries(series.id);
+                        }}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 ))
               ) : (
-                <p className="text-muted-foreground">لا توجد مسلسلات حتى الآن</p>
+                <p className="text-muted-foreground">لا توجد مسلسلات حالياً</p>
               )}
             </div>
           </TabsContent>
 
           {/* ==================== تبويب الحلقات ==================== */}
           <TabsContent value="episodes" className="space-y-6">
-            {!selectedSeries ? (
-              <Card className="bg-secondary">
-                <CardContent className="pt-6">
-                  <p className="text-center text-muted-foreground">
-                    اختر مسلسل من تبويب المسلسلات لإدارة الحلقات
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
+            {/* اختيار المسلسل */}
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">
+                اختر المسلسل *
+              </label>
+              <select
+                value={selectedSeries || ""}
+                onChange={(e) => setSelectedSeries(Number(e.target.value) || null)}
+                className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground"
+              >
+                <option value="">-- اختر مسلسل --</option>
+                {seriesList?.map((series) => (
+                  <option key={series.id} value={series.id}>
+                    {series.titleAr}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {selectedSeries && (
               <>
                 {/* زر إضافة حلقة */}
                 <Button
@@ -314,84 +366,97 @@ export default function Admin() {
                   إضافة حلقة جديدة
                 </Button>
 
-                {/* نموذج إضافة حلقة */}
+                {/* نموذج إضافة حلقة محسّن */}
                 {showEpisodeForm && (
                   <Card className="bg-secondary border-primary/20">
                     <CardHeader>
-                      <CardTitle>إضافة حلقة جديدة</CardTitle>
+                      <CardTitle>إضافة حلقة جديدة من يوتيوب</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <form onSubmit={handleAddEpisode} className="space-y-4">
-                        <div>
-                          <label className="text-sm font-medium text-foreground mb-2 block">
-                            رقم الحلقة *
-                          </label>
-                          <Input
-                            type="number"
-                            placeholder="1"
-                            value={episodeForm.episodeNumber}
-                            onChange={(e) =>
-                              setEpisodeForm({
-                                ...episodeForm,
-                                episodeNumber: e.target.value,
-                              })
-                            }
-                            min="1"
-                            className="bg-background border-border"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="text-sm font-medium text-foreground mb-2 block">
-                            اسم الحلقة *
-                          </label>
-                          <Input
-                            placeholder="مثال: الحلقة الأولى"
-                            value={episodeForm.titleAr}
-                            onChange={(e) =>
-                              setEpisodeForm({
-                                ...episodeForm,
-                                titleAr: e.target.value,
-                              })
-                            }
-                            required
-                            className="bg-background border-border"
-                          />
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-foreground mb-2 block">
+                              رقم الحلقة *
+                            </label>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={episodeForm.episodeNumber}
+                              onChange={(e) =>
+                                setEpisodeForm({ ...episodeForm, episodeNumber: e.target.value })
+                              }
+                              className="bg-background border-border"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-foreground mb-2 block">
+                              اسم الحلقة *
+                            </label>
+                            <Input
+                              placeholder="مثال: الحلقة الأولى"
+                              value={episodeForm.titleAr}
+                              onChange={(e) =>
+                                setEpisodeForm({ ...episodeForm, titleAr: e.target.value })
+                              }
+                              className="bg-background border-border"
+                            />
+                          </div>
                         </div>
 
                         <div>
                           <label className="text-sm font-medium text-foreground mb-2 block">
                             رابط يوتيوب *
                           </label>
-                          <Input
-                            type="url"
-                            placeholder="https://youtu.be/..."
-                            value={episodeForm.videoUrl}
-                            onChange={(e) =>
-                              setEpisodeForm({
-                                ...episodeForm,
-                                videoUrl: e.target.value,
-                              })
-                            }
-                            required
-                            className="bg-background border-border"
-                          />
+                          <div className="space-y-2">
+                            <Input
+                              placeholder="https://youtu.be/... أو https://www.youtube.com/watch?v=..."
+                              value={episodeForm.videoUrl}
+                              onChange={(e) => handleYoutubeUrlChange(e.target.value)}
+                              className="bg-background border-border"
+                            />
+                            {!youtubePreview && episodeForm.videoUrl && (
+                              <div className="flex items-center gap-2 text-yellow-500 text-sm">
+                                <AlertCircle className="w-4 h-4" />
+                                <span>رابط يوتيوب غير صحيح</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
+
+                        {/* معاينة الفيديو */}
+                        {youtubePreview && (
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-foreground">معاينة الفيديو</label>
+                            <div className="relative w-full bg-black rounded-lg overflow-hidden">
+                              <iframe
+                                width="100%"
+                                height="300"
+                                src={youtubePreview}
+                                title="معاينة الفيديو"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                              />
+                            </div>
+                          </div>
+                        )}
 
                         <div className="flex gap-2 pt-4">
                           <Button
                             type="submit"
                             className="flex-1 bg-green-600 hover:bg-green-700"
-                            disabled={createEpisodeMutation.isPending}
+                            disabled={createEpisodeMutation.isPending || !youtubePreview}
                           >
-                            {createEpisodeMutation.isPending
-                              ? "جاري الإضافة..."
-                              : "إضافة الحلقة"}
+                            {createEpisodeMutation.isPending ? "جاري الإضافة..." : "إضافة الحلقة"}
                           </Button>
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={() => setShowEpisodeForm(false)}
+                            onClick={() => {
+                              setShowEpisodeForm(false);
+                              setYoutubePreview("");
+                            }}
                             className="flex-1"
                           >
                             إلغاء
@@ -404,33 +469,32 @@ export default function Admin() {
 
                 {/* قائمة الحلقات */}
                 <div className="space-y-3">
-                  <h2 className="text-lg font-semibold text-foreground">الحلقات</h2>
+                  <h3 className="text-lg font-semibold text-foreground">الحلقات</h3>
                   {episodes && episodes.length > 0 ? (
-                    episodes.map((ep) => (
-                      <div
-                        key={ep.id}
-                        className="flex items-center justify-between p-4 bg-secondary rounded-lg border border-border hover:border-primary/50 transition"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-foreground">
-                            الحلقة {ep.episodeNumber}: {ep.titleAr}
-                          </p>
-                          <p className="text-sm text-muted-foreground truncate">
-                            {ep.videoUrl}
-                          </p>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDeleteEpisode(ep.id)}
-                          className="ml-2"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                    episodes.map((episode) => (
+                      <Card key={episode.id} className="bg-secondary border-border hover:border-primary/50">
+                        <CardContent className="p-4 flex justify-between items-center">
+                          <div className="flex items-center gap-3 flex-1">
+                            <Play className="w-5 h-5 text-primary" />
+                            <div>
+                              <h4 className="font-semibold text-foreground">
+                                الحلقة {episode.episodeNumber}: {episode.titleAr}
+                              </h4>
+                              <p className="text-xs text-muted-foreground truncate">{episode.videoUrl}</p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteEpisode(episode.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </CardContent>
+                      </Card>
                     ))
                   ) : (
-                    <p className="text-muted-foreground">لا توجد حلقات حتى الآن</p>
+                    <p className="text-muted-foreground">لا توجد حلقات لهذا المسلسل</p>
                   )}
                 </div>
               </>
