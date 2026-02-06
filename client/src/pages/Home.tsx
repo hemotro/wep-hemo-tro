@@ -42,13 +42,8 @@ export default function Home() {
     );
   }
 
-  const getBannerUrl = (titleAr: string) => {
-    if (titleAr === "تخاريف") return "/takhareef-banner.jpg";
-    return null;
-  };
-
   const currentSeries = seriesList[currentSlide];
-  const currentBanner = getBannerUrl(currentSeries?.titleAr);
+  const currentBanner = currentSeries?.posterUrl;
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % seriesList.length);
@@ -64,16 +59,20 @@ export default function Home() {
     <div className="flex-1 pb-20">
       {/* Carousel في الأعلى */}
       <div className="relative w-full">
-        {currentBanner && currentSeries && (
+        {currentSeries && (
           <div className="relative">
             {/* الصورة الكبيرة */}
-            <div className="relative w-full h-64 overflow-hidden">
-              <img
-                src={currentBanner}
-                alt={currentSeries.titleAr}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
+            <div className="relative w-full h-64 md:h-96 overflow-hidden bg-gradient-to-br from-primary/20 to-background">
+              {currentBanner && (
+                <>
+                  <img
+                    src={currentBanner}
+                    alt={currentSeries.titleAr}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
+                </>
+              )}
 
               {/* معلومات المسلسل */}
               <div className="absolute bottom-0 left-0 right-0 p-4">
@@ -128,37 +127,34 @@ export default function Home() {
         <h3 className="text-lg font-bold text-foreground mb-4">جميع المسلسلات</h3>
         <div className="overflow-x-auto pb-4">
           <div className="flex gap-4 min-w-min">
-            {seriesList.map((series) => {
-              const banner = getBannerUrl(series.titleAr);
-              return (
-                <Link key={series.id} href={`/series/${series.id}`}>
-                  <a className="flex-shrink-0 group">
-                    <div className="relative w-32 h-48 rounded-lg overflow-hidden">
-                      {banner ? (
-                        <>
-                          <img
-                            src={banner}
-                            alt={series.titleAr}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                          />
-                          <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors flex items-end justify-center pb-3 opacity-0 group-hover:opacity-100">
-                            <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                              <Play className="w-3 h-3 mr-1" />
-                              شاهد
-                            </Button>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-primary/20 to-background flex flex-col items-center justify-center p-3 text-center">
-                          <p className="text-sm font-semibold text-foreground mb-2">{series.titleAr}</p>
-                          <p className="text-xs text-muted-foreground">{series.totalEpisodes} حلقة</p>
+            {seriesList.map((series) => (
+              <Link key={series.id} href={`/series/${series.id}`}>
+                <a className="flex-shrink-0 group">
+                  <div className="relative w-32 h-48 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-background">
+                    {series.posterUrl ? (
+                      <>
+                        <img
+                          src={series.posterUrl}
+                          alt={series.titleAr}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors flex items-end justify-center pb-3 opacity-0 group-hover:opacity-100">
+                          <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                            <Play className="w-3 h-3 mr-1" />
+                            شاهد
+                          </Button>
                         </div>
-                      )}
-                    </div>
-                  </a>
-                </Link>
-              );
-            })}
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center">
+                        <p className="text-sm font-semibold text-foreground mb-2">{series.titleAr}</p>
+                        <p className="text-xs text-muted-foreground">{series.totalEpisodes} حلقة</p>
+                      </div>
+                    )}
+                  </div>
+                </a>
+              </Link>
+            ))}
           </div>
         </div>
       </div>
