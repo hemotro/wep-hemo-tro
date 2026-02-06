@@ -19,8 +19,7 @@ export default function Admin() {
   const [showSeriesForm, setShowSeriesForm] = useState(false);
   const [showEpisodeForm, setShowEpisodeForm] = useState(false);
   const [editingSeriesId, setEditingSeriesId] = useState<number | null>(null);
-  const [posterFile, setPosterFile] = useState<File | null>(null);
-  const [posterPreview, setPosterPreview] = useState<string>("");
+
 
   // فحص الصلاحيات
   if (user?.role !== "admin") {
@@ -62,22 +61,6 @@ export default function Admin() {
     videoUrl: "",
   });
 
-  // ==================== معالجات الملفات ====================
-
-  const handlePosterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPosterFile(file);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64 = event.target?.result as string;
-        setPosterPreview(base64);
-        setSeriesForm(prev => ({ ...prev, posterUrl: base64 }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   // ==================== معالجات المسلسلات ====================
 
   const handleAddSeries = async (e: React.FormEvent) => {
@@ -109,8 +92,6 @@ export default function Admin() {
       }
       
       setSeriesForm({ titleAr: "", genre: "", posterUrl: "" });
-      setPosterFile(null);
-      setPosterPreview("");
       setShowSeriesForm(false);
       refetchSeries();
     } catch (error: any) {
@@ -125,7 +106,7 @@ export default function Admin() {
       genre: series.genre || "",
       posterUrl: series.posterUrl || "",
     });
-    setPosterPreview(series.posterUrl || "");
+
     setShowSeriesForm(true);
   };
 
@@ -210,7 +191,6 @@ export default function Admin() {
               onClick={() => {
                 setEditingSeriesId(null);
                 setSeriesForm({ titleAr: "", genre: "", posterUrl: "" });
-                setPosterPreview("");
                 setShowSeriesForm(!showSeriesForm);
               }}
               className="w-full"
@@ -252,17 +232,28 @@ export default function Admin() {
 
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        البانر (الصورة)
+                        رابط البانر (URL)
                       </label>
                       <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePosterChange}
+                        type="url"
+                        value={seriesForm.posterUrl}
+                        onChange={(e) => setSeriesForm(prev => ({ ...prev, posterUrl: e.target.value }))}
+                        placeholder="https://example.com/banner.jpg"
                         className="bg-background border-border text-foreground"
                       />
-                      {posterPreview && (
-                        <div className="mt-3 relative w-32 h-48 rounded-lg overflow-hidden border border-border">
-                          <img src={posterPreview} alt="معاينة" className="w-full h-full object-cover" />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        أدخل رابط الصورة مباشرة (JPG, PNG, WebP)
+                      </p>
+                      {seriesForm.posterUrl && (
+                        <div className="mt-3 relative w-full h-32 rounded-lg overflow-hidden border border-border bg-black">
+                          <img 
+                            src={seriesForm.posterUrl} 
+                            alt="معاينة" 
+                            className="w-full h-full object-cover"
+                            onError={() => {
+                              toast.error("فشل تحميل الصورة - تحقق من الرابط");
+                            }}
+                          />
                         </div>
                       )}
                     </div>
