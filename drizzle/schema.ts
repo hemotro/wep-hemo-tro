@@ -80,6 +80,7 @@ export const episodes = mysqlTable("episodes", {
   description: text("description"),
   descriptionAr: text("descriptionAr"),
   videoUrl: varchar("videoUrl", { length: 500 }).notNull(),
+  thumbnailUrl: varchar("thumbnailUrl", { length: 500 }),
   duration: int("duration"),
   releaseDate: timestamp("releaseDate"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

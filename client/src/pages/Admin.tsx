@@ -51,6 +51,7 @@ export default function Admin() {
 
   const [seriesForm, setSeriesForm] = useState({
     titleAr: "",
+    descriptionAr: "",
     genre: "",
     posterUrl: "",
   });
@@ -59,6 +60,7 @@ export default function Admin() {
     episodeNumber: "",
     titleAr: "",
     videoUrl: "",
+    thumbnailUrl: "",
   });
 
   // ==================== معالجات المسلسلات ====================
@@ -76,6 +78,7 @@ export default function Admin() {
         await updateSeriesMutation.mutateAsync({
           id: editingSeriesId,
           titleAr: seriesForm.titleAr,
+          descriptionAr: seriesForm.descriptionAr || "",
           genre: seriesForm.genre || "",
           posterUrl: seriesForm.posterUrl || "",
         });
@@ -85,13 +88,14 @@ export default function Admin() {
         // إضافة مسلسل جديد
         await createSeriesMutation.mutateAsync({
           titleAr: seriesForm.titleAr,
+          descriptionAr: seriesForm.descriptionAr || "",
           genre: seriesForm.genre || "",
           posterUrl: seriesForm.posterUrl || "",
         });
         toast.success("تم إضافة المسلسل بنجاح!");
       }
       
-      setSeriesForm({ titleAr: "", genre: "", posterUrl: "" });
+      setSeriesForm({ titleAr: "", descriptionAr: "", genre: "", posterUrl: "" });
       setShowSeriesForm(false);
       refetchSeries();
     } catch (error: any) {
@@ -103,6 +107,7 @@ export default function Admin() {
     setEditingSeriesId(series.id);
     setSeriesForm({
       titleAr: series.titleAr,
+      descriptionAr: series.descriptionAr || "",
       genre: series.genre || "",
       posterUrl: series.posterUrl || "",
     });
@@ -145,10 +150,11 @@ export default function Admin() {
         episodeNumber,
         titleAr: episodeForm.titleAr,
         videoUrl: episodeForm.videoUrl,
+        thumbnailUrl: episodeForm.thumbnailUrl || undefined,
       });
       
       toast.success("تم إضافة الحلقة بنجاح!");
-      setEpisodeForm({ episodeNumber: "", titleAr: "", videoUrl: "" });
+      setEpisodeForm({ episodeNumber: "", titleAr: "", videoUrl: "", thumbnailUrl: "" });
       setShowEpisodeForm(false);
       refetchEpisodes();
     } catch (error: any) {
@@ -190,7 +196,7 @@ export default function Admin() {
             <Button
               onClick={() => {
                 setEditingSeriesId(null);
-                setSeriesForm({ titleAr: "", genre: "", posterUrl: "" });
+                setSeriesForm({ titleAr: "", descriptionAr: "", genre: "", posterUrl: "" });
                 setShowSeriesForm(!showSeriesForm);
               }}
               className="w-full"
@@ -215,6 +221,19 @@ export default function Admin() {
                         onChange={(e) => setSeriesForm(prev => ({ ...prev, titleAr: e.target.value }))}
                         placeholder="أدخل اسم المسلسل"
                         className="bg-background border-border text-foreground"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        الوصف
+                      </label>
+                      <textarea
+                        value={seriesForm.descriptionAr}
+                        onChange={(e) => setSeriesForm(prev => ({ ...prev, descriptionAr: e.target.value }))}
+                        placeholder="أدخل وصف المسلسل..."
+                        rows={4}
+                        className="w-full p-2 rounded-lg bg-background border border-border text-foreground"
                       />
                     </div>
 
@@ -391,6 +410,22 @@ export default function Admin() {
                               ></iframe>
                             </div>
                           )}
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">
+                            رابط الصورة المصغرة (اختياري)
+                          </label>
+                          <Input
+                            type="url"
+                            value={episodeForm.thumbnailUrl}
+                            onChange={(e) => setEpisodeForm(prev => ({ ...prev, thumbnailUrl: e.target.value }))}
+                            placeholder="https://example.com/thumbnail.jpg"
+                            className="bg-background border-border text-foreground"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            اختياري: صورة مصغرة للحلقة بحجم 16:9
+                          </p>
                         </div>
 
                         <Button type="submit" className="w-full" disabled={createEpisodeMutation.isPending}>

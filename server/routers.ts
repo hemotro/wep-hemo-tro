@@ -200,6 +200,7 @@ export const appRouter = router({
         descriptionAr: z.string().optional(),
         description: z.string().optional(),
         videoUrl: z.string().url("رابط الفيديو غير صحيح"),
+        thumbnailUrl: z.string().optional(),
         duration: z.number().optional(),
       }))
       .mutation(async ({ input }) => {
@@ -213,6 +214,7 @@ export const appRouter = router({
             descriptionAr: input.descriptionAr,
             description: input.description,
             videoUrl: input.videoUrl,
+            thumbnailUrl: input.thumbnailUrl,
             duration: input.duration,
           });
           return { success: true, message: "تم إضافة الحلقة بنجاح" };
@@ -233,6 +235,7 @@ export const appRouter = router({
         descriptionAr: z.string().optional(),
         description: z.string().optional(),
         videoUrl: z.string().url().optional(),
+        thumbnailUrl: z.string().optional(),
         duration: z.number().optional(),
       }))
       .mutation(async ({ input }) => {
