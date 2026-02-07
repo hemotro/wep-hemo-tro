@@ -8,7 +8,6 @@ import {
   registerUser, loginWithEmail, createSeries, updateSeries, deleteSeries,
   createEpisode, updateEpisode, deleteEpisode,
   addFavorite, removeFavorite, getUserFavorites, isFavorite,
-  addOrUpdateRating, getSeriesRatings, getUserRating, getAverageRating,
   addSeriesImage, getSeriesImages, deleteSeriesImage, setDefaultImage
 } from "./db";
 import { TRPCError } from "@trpc/server";
@@ -325,78 +324,6 @@ export const appRouter = router({
       }),
   }),
 
-  // ==================== التقييمات ====================
-  ratings: router({
-    addOrUpdate: protectedProcedure
-      .input(z.object({
-        seriesId: z.number().optional(),
-        episodeId: z.number().optional(),
-        rating: z.number().min(1).max(5),
-        comment: z.string().optional(),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        try {
-          if (!input.seriesId && !input.episodeId) {
-            throw new Error("يجب تحديد المسلسل أو الحلقة");
-          }
-          const result = await addOrUpdateRating({
-            userId: ctx.user.id,
-            seriesId: input.seriesId,
-            episodeId: input.episodeId,
-            rating: input.rating,
-            comment: input.comment,
-          });
-          return { success: true, data: result, message: "تم حفظ التقييم بنجاح" };
-        } catch (error: any) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: error.message || "فشل حفظ التقييم",
-          });
-        }
-      }),
-
-    getSeriesRatings: publicProcedure
-      .input(z.object({ seriesId: z.number() }))
-      .query(async ({ input }) => {
-        try {
-          const ratings = await getSeriesRatings(input.seriesId);
-          return ratings;
-        } catch (error: any) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: error.message || "فشل جلب التقييمات",
-          });
-        }
-      }),
-
-    getUserRating: protectedProcedure
-      .input(z.object({ seriesId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        try {
-          const rating = await getUserRating(ctx.user.id, input.seriesId);
-          return rating;
-        } catch (error: any) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: error.message || "فشل جلب التقييم",
-          });
-        }
-      }),
-
-    getAverageRating: publicProcedure
-      .input(z.object({ seriesId: z.number() }))
-      .query(async ({ input }) => {
-        try {
-          const average = await getAverageRating(input.seriesId);
-          return average;
-        } catch (error: any) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: error.message || "فشل جلب متوسط التقييم",
-          });
-        }
-      }),
-  }),
 
   // ==================== صور المسلسلات ====================
   seriesImages: router({

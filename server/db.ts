@@ -1,6 +1,6 @@
 import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, ratings, InsertFavorite, InsertRating, seriesImages, InsertSeriesImage } from "../drizzle/schema";
+import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, InsertFavorite, seriesImages, InsertSeriesImage } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import bcrypt from "bcrypt";
 
@@ -285,72 +285,7 @@ export async function isFavorite(userId: number, seriesId: number) {
   return result.length > 0;
 }
 
-// ==================== التقييمات ====================
 
-export async function addOrUpdateRating(data: InsertRating) {
-  const db = await getDb();
-  if (!db) throw new Error("قاعدة البيانات غير متاحة");
-
-  let existing: any[] = [];
-  if (data.seriesId) {
-    existing = await db.select().from(ratings).where(
-      and(eq(ratings.userId, data.userId), eq(ratings.seriesId, data.seriesId))
-    ).limit(1);
-  } else if (data.episodeId) {
-    existing = await db.select().from(ratings).where(
-      and(eq(ratings.userId, data.userId), eq(ratings.episodeId, data.episodeId))
-    ).limit(1);
-  } else {
-  }
-
-  if (existing.length > 0) {
-    // تحديث التقييم الموجود
-    await db.update(ratings).set(data).where(eq(ratings.id, existing[0].id));
-    return await getRatingById(existing[0].id);
-  } else {
-    // إنشاء تقييم جديد
-    const result = await db.insert(ratings).values(data);
-    return result;
-  }
-}
-
-export async function getRatingById(id: number) {
-  const db = await getDb();
-  if (!db) return null;
-
-  const result = await db.select().from(ratings).where(eq(ratings.id, id)).limit(1);
-  return result.length > 0 ? result[0] : null;
-}
-
-export async function getSeriesRatings(seriesId: number) {
-  const db = await getDb();
-  if (!db) return [];
-
-  const result = await db.select().from(ratings).where(eq(ratings.seriesId, seriesId));
-  return result;
-}
-
-export async function getUserRating(userId: number, seriesId: number) {
-  const db = await getDb();
-  if (!db) return null;
-
-  const result = await db.select().from(ratings).where(
-    and(eq(ratings.userId, userId), eq(ratings.seriesId, seriesId))
-  ).limit(1);
-
-  return result.length > 0 ? result[0] : null;
-}
-
-export async function getAverageRating(seriesId: number) {
-  const db = await getDb();
-  if (!db) return 0;
-
-  const result = await db.select().from(ratings).where(eq(ratings.seriesId, seriesId));
-  if (result.length === 0) return 0;
-
-  const sum = result.reduce((acc, r) => acc + r.rating, 0);
-  return sum / result.length;
-}
 
 
 // ==================== صور المسلسلات ====================

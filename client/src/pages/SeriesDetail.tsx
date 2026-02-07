@@ -1,8 +1,36 @@
-import { trpc } from "@/lib/trpc";
-import { useState, useEffect } from "react";
-import { Play, Heart } from "lucide-react";
+import { useState } from "react";
+import { Heart } from "lucide-react";
 import { useParams } from "wouter";
-import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
+
+function FavoriteButton({ seriesId }: { seriesId: number }) {
+  const { data: isFav } = trpc.favorites.isFavorite.useQuery({ seriesId });
+  const addFav = trpc.favorites.add.useMutation();
+  const removeFav = trpc.favorites.remove.useMutation();
+
+  const handleToggle = async () => {
+    try {
+      if (isFav) {
+        await removeFav.mutateAsync({ seriesId });
+      } else {
+        await addFav.mutateAsync({ seriesId });
+      }
+    } catch (error) {
+      console.error("خطأ في تحديث المفضلة:", error);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleToggle}
+      className={`p-2 rounded-full transition-colors ${
+        isFav ? "bg-red-500 text-white" : "bg-muted text-muted-foreground hover:bg-red-500 hover:text-white"
+      }`}
+    >
+      <Heart size={24} fill={isFav ? "currentColor" : "none"} />
+    </button>
+  );
+}
 
 export default function SeriesDetail() {
   const { id } = useParams<{ id: string }>();
@@ -91,7 +119,6 @@ export default function SeriesDetail() {
             <p className="text-muted-foreground text-sm">من {series.totalEpisodes} حلقة</p>
           </div>
         )}
-        <RatingDisplay seriesId={seriesId} />
         
         {/* الوصف */}
         {series.descriptionAr && (
@@ -103,190 +130,47 @@ export default function SeriesDetail() {
 
       {/* قائمة الحلقات */}
       <div className="px-4 py-6">
-        <h2 className="text-lg font-bold text-foreground mb-4">الحلقات</h2>
-
-        <div className="space-y-2">
-          {episodes && episodes.length > 0 ? (
-            episodes.map((episode) => (
+        <h2 className="text-xl font-bold text-foreground mb-4">الحلقات</h2>
+        {episodesLoading ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">جاري تحميل الحلقات...</p>
+          </div>
+        ) : episodes && episodes.length > 0 ? (
+          <div className="space-y-3">
+            {episodes.map((episode) => (
               <button
                 key={episode.id}
                 onClick={() => setSelectedEpisode(episode.episodeNumber)}
-                className={`w-full p-3 rounded-lg border-2 transition-all text-right flex items-center gap-3 ${
+                className={`w-full p-3 rounded-lg border transition-all text-left flex items-center gap-3 ${
                   selectedEpisode === episode.episodeNumber
                     ? "border-primary bg-primary/10"
-                    : "border-border bg-background/50 hover:border-primary/50"
+                    : "border-border hover:border-primary/50"
                 }`}
               >
                 {/* صورة مصغرة للحلقة */}
-                <div className="flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden bg-primary/20 flex items-center justify-center">
-                  {episode.thumbnailUrl ? (
-                    <img 
-                      src={episode.thumbnailUrl} 
-                      alt={`الحلقة ${episode.episodeNumber}`}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="font-bold text-foreground text-sm">{episode.episodeNumber}</span>
-                  )}
-                </div>
-
-                {/* معلومات الحلقة */}
-                <div className="flex-1">
-                  <p className="font-semibold text-foreground text-sm">الحلقة {episode.episodeNumber}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {episode.titleAr || `الحلقة ${episode.episodeNumber}`}
-                  </p>
-                </div>
-
-                {/* أيقونة التشغيل */}
-                {selectedEpisode === episode.episodeNumber && (
-                  <Play className="w-5 h-5 text-primary flex-shrink-0" fill="currentColor" />
+                {episode.thumbnailUrl ? (
+                  <img
+                    src={episode.thumbnailUrl}
+                    alt={`الحلقة ${episode.episodeNumber}`}
+                    className="w-16 h-12 object-cover rounded"
+                  />
+                ) : (
+                  <div className="w-16 h-12 bg-muted rounded flex items-center justify-center text-sm font-semibold text-muted-foreground">
+                    {episode.episodeNumber}
+                  </div>
                 )}
-              </button>
-            ))
-          ) : (
-            <p className="text-muted-foreground text-center py-8">لا توجد حلقات متاحة</p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// مكون زر المفضلة
-function FavoriteButton({ seriesId }: { seriesId: number }) {
-  const [isFav, setIsFav] = useState(false);
-  const checkFav = trpc.favorites.isFavorite.useQuery({ seriesId });
-  const addFav = trpc.favorites.add.useMutation();
-  const removeFav = trpc.favorites.remove.useMutation();
-
-  useEffect(() => {
-    if (checkFav.data !== undefined) {
-      setIsFav(checkFav.data);
-    }
-  }, [checkFav.data]);
-
-  const handleToggleFavorite = async () => {
-    try {
-      if (isFav) {
-        await removeFav.mutateAsync({ seriesId });
-        setIsFav(false);
-        toast.success("تم إزالة من المفضلة");
-      } else {
-        await addFav.mutateAsync({ seriesId });
-        setIsFav(true);
-        toast.success("تم إضافة إلى المفضلة");
-      }
-    } catch (error) {
-      toast.error("حدث خطأ");
-    }
-  };
-
-  return (
-    <button
-      onClick={handleToggleFavorite}
-      className="p-2 rounded-full hover:bg-primary/20 transition-colors"
-    >
-      <Heart
-        className="w-6 h-6"
-        fill={isFav ? "currentColor" : "none"}
-        color={isFav ? "#ef4444" : "currentColor"}
-      />
-    </button>
-  );
-}
-
-// مكون عرض التقييمات
-function RatingDisplay({ seriesId }: { seriesId: number }) {
-  const [rating, setRating] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [comment, setComment] = useState("");
-  const [showForm, setShowForm] = useState(false);
-
-  const { data: userRating } = trpc.ratings.getUserRating.useQuery({ seriesId });
-  const { data: avgRating } = trpc.ratings.getAverageRating.useQuery({ seriesId });
-  const addRatingMutation = trpc.ratings.addOrUpdate.useMutation();
-
-  useEffect(() => {
-    if (userRating) {
-      setRating(userRating.rating);
-      setComment(userRating.comment || "");
-    }
-  }, [userRating]);
-
-  const handleSubmitRating = async () => {
-    if (rating === 0) {
-      toast.error("اختر تقييماً");
-      return;
-    }
-
-    try {
-      await addRatingMutation.mutateAsync({
-        seriesId,
-        rating,
-        comment: comment || undefined,
-      });
-      toast.success("تم حفظ التقييم");
-      setShowForm(false);
-    } catch (error) {
-      toast.error("فشل حفظ التقييم");
-    }
-  };
-
-  return (
-    <div className="mt-3">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-semibold text-foreground">التقييم</span>
-        <span className="text-sm text-primary">
-          {avgRating ? avgRating.toFixed(1) : "0"} ⭐
-        </span>
-      </div>
-
-      {!showForm ? (
-        <button
-          onClick={() => setShowForm(true)}
-          className="text-xs text-primary hover:underline"
-        >
-          {rating > 0 ? `تقييمك: ${rating} ⭐` : "أضف تقييماً"}
-        </button>
-      ) : (
-        <div className="space-y-2 p-3 bg-background/50 rounded-lg">
-          <div className="flex gap-1">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                onClick={() => setRating(star)}
-                onMouseEnter={() => setHoverRating(star)}
-                onMouseLeave={() => setHoverRating(0)}
-                className="text-2xl transition-transform hover:scale-110"
-              >
-                {star <= (hoverRating || rating) ? "⭐" : "☆"}
+                
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-foreground">الحلقة {episode.episodeNumber}</p>
+                  <p className="text-sm text-muted-foreground truncate">{episode.titleAr}</p>
+                </div>
               </button>
             ))}
           </div>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="أضف تعليقاً (اختياري)"
-            rows={2}
-            className="w-full p-2 text-xs rounded bg-background border border-border text-foreground"
-          />
-          <div className="flex gap-2">
-            <button
-              onClick={handleSubmitRating}
-              className="flex-1 px-2 py-1 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90"
-            >
-              حفظ
-            </button>
-            <button
-              onClick={() => setShowForm(false)}
-              className="flex-1 px-2 py-1 text-xs bg-background border border-border rounded hover:bg-background/80"
-            >
-              إلغاء
-            </button>
-          </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-center text-muted-foreground py-8">لا توجد حلقات</p>
+        )}
+      </div>
     </div>
   );
 }

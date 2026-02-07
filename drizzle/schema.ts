@@ -103,19 +103,3 @@ export const favorites = mysqlTable("favorites", {
 export type Favorite = typeof favorites.$inferSelect;
 export type InsertFavorite = typeof favorites.$inferInsert;
 
-/**
- * جدول التقييمات
- */
-export const ratings = mysqlTable("ratings", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  seriesId: int("seriesId"),
-  episodeId: int("episodeId"),
-  rating: int("rating").notNull(), // من 1 إلى 5
-  comment: text("comment"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
-
-export type Rating = typeof ratings.$inferSelect;
-export type InsertRating = typeof ratings.$inferInsert;
