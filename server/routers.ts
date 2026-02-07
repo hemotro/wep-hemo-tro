@@ -8,7 +8,9 @@ import {
   registerUser, loginWithEmail, createSeries, updateSeries, deleteSeries,
   createEpisode, updateEpisode, deleteEpisode,
   addFavorite, removeFavorite, getUserFavorites, isFavorite,
-  addSeriesImage, getSeriesImages, deleteSeriesImage, setDefaultImage
+  addSeriesImage, getSeriesImages, deleteSeriesImage, setDefaultImage,
+  createChannel, getAllChannels, getChannelById, updateChannel, deleteChannel,
+  updateSeriesPromo, getSeriesPromo
 } from "./db";
 import { TRPCError } from "@trpc/server";
 
@@ -391,6 +393,140 @@ export const appRouter = router({
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: error.message || "فشل تعيين الصورة الافتراضية",
+          });
+        }
+      }),
+  }),
+
+  // ==================== البرومو ====================
+  promo: router({
+    update: adminProcedure
+      .input(z.object({
+        seriesId: z.number(),
+        promoUrl: z.string().url(),
+        promoTitle: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          await updateSeriesPromo(input.seriesId, input.promoUrl, input.promoTitle);
+          return { success: true, message: "تم تحديث البرومو بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message || "فشل تحديث البرومو",
+          });
+        }
+      }),
+
+    get: publicProcedure
+      .input(z.object({ seriesId: z.number() }))
+      .query(async ({ input }) => {
+        try {
+          const promo = await getSeriesPromo(input.seriesId);
+          return promo;
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل جلب البرومو",
+          });
+        }
+      }),
+  }),
+
+  // ==================== القنوات المباشرة ====================
+  channels: router({
+    create: adminProcedure
+      .input(z.object({
+        name: z.string(),
+        nameAr: z.string(),
+        logoUrl: z.string().url().optional(),
+        streamUrl: z.string().url(),
+        streamType: z.enum(["m3u8", "youtube"]),
+        description: z.string().optional(),
+        descriptionAr: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          await createChannel({
+            name: input.name,
+            nameAr: input.nameAr,
+            logoUrl: input.logoUrl,
+            streamUrl: input.streamUrl,
+            streamType: input.streamType,
+            description: input.description,
+            descriptionAr: input.descriptionAr,
+          });
+          return { success: true, message: "تم إضافة القناة بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message || "فشل إضافة القناة",
+          });
+        }
+      }),
+
+    list: publicProcedure
+      .query(async () => {
+        try {
+          const channelsList = await getAllChannels();
+          return channelsList;
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل جلب القنوات",
+          });
+        }
+      }),
+
+    getById: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        try {
+          const channel = await getChannelById(input.id);
+          return channel;
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل جلب القناة",
+          });
+        }
+      }),
+
+    update: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().optional(),
+        nameAr: z.string().optional(),
+        logoUrl: z.string().url().optional(),
+        streamUrl: z.string().url().optional(),
+        streamType: z.enum(["m3u8", "youtube"]).optional(),
+        description: z.string().optional(),
+        descriptionAr: z.string().optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const { id, ...data } = input;
+          await updateChannel(id, data);
+          return { success: true, message: "تم تحديث القناة بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message || "فشل تحديث القناة",
+          });
+        }
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        try {
+          await deleteChannel(input.id);
+          return { success: true, message: "تم حذف القناة بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message || "فشل حذف القناة",
           });
         }
       }),

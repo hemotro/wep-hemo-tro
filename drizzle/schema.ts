@@ -42,6 +42,8 @@ export const series = mysqlTable("series", {
   currentSeason: int("currentSeason").default(1),
   totalEpisodes: int("totalEpisodes").default(0),
   rating: varchar("rating", { length: 10 }),
+  promoUrl: varchar("promoUrl", { length: 500 }), // رابط فيديو البرومو
+  promoTitle: varchar("promoTitle", { length: 255 }), // عنوان البرومو
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -102,4 +104,25 @@ export const favorites = mysqlTable("favorites", {
 
 export type Favorite = typeof favorites.$inferSelect;
 export type InsertFavorite = typeof favorites.$inferInsert;
+
+/**
+ * جدول القنوات المباشرة
+ */
+export const channels = mysqlTable("channels", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  nameAr: varchar("nameAr", { length: 255 }).notNull(),
+  logoUrl: varchar("logoUrl", { length: 500 }),
+  streamUrl: varchar("streamUrl", { length: 500 }).notNull(), // رابط m3u8 أو يوتيوب
+  streamType: mysqlEnum("streamType", ["m3u8", "youtube"]).notNull(),
+  description: text("description"),
+  descriptionAr: text("descriptionAr"),
+  isActive: boolean("isActive").default(true),
+  displayOrder: int("displayOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Channel = typeof channels.$inferSelect;
+export type InsertChannel = typeof channels.$inferInsert;
 

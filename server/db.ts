@@ -1,6 +1,6 @@
 import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, InsertFavorite, seriesImages, InsertSeriesImage } from "../drizzle/schema";
+import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, InsertFavorite, seriesImages, InsertSeriesImage, channels, Channel, InsertChannel } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import bcrypt from "bcrypt";
 
@@ -343,4 +343,71 @@ export async function setDefaultImage(seriesId: number, imageId: number) {
   // تعيين الصورة الجديدة كافتراضية
   await db.update(seriesImages).set({ isDefault: true }).where(eq(seriesImages.id, imageId));
   return { success: true };
+}
+
+
+// ==================== القنوات المباشرة ====================
+
+export async function createChannel(data: InsertChannel) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  const result = await db.insert(channels).values(data);
+  return result;
+}
+
+export async function getAllChannels() {
+  const db = await getDb();
+  if (!db) return [];
+
+  const result = await db.select().from(channels).where(eq(channels.isActive, true));
+  return result;
+}
+
+export async function getChannelById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.select().from(channels).where(eq(channels.id, id)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function updateChannel(id: number, data: Partial<InsertChannel>) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  await db.update(channels).set(data).where(eq(channels.id, id));
+  return { success: true };
+}
+
+export async function deleteChannel(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  await db.delete(channels).where(eq(channels.id, id));
+  return { success: true };
+}
+
+// ==================== البرومو ====================
+
+export async function updateSeriesPromo(seriesId: number, promoUrl: string, promoTitle: string) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  await db.update(series).set({ promoUrl, promoTitle }).where(eq(series.id, seriesId));
+  return { success: true };
+}
+
+export async function getSeriesPromo(seriesId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.select().from(series).where(eq(series.id, seriesId)).limit(1);
+  if (result.length === 0) return null;
+
+  const s = result[0];
+  return {
+    promoUrl: s.promoUrl,
+    promoTitle: s.promoTitle,
+  };
 }

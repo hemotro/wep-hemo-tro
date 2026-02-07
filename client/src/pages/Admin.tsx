@@ -189,6 +189,8 @@ export default function Admin() {
             <TabsTrigger value="series">المسلسلات</TabsTrigger>
             <TabsTrigger value="episodes">الحلقات</TabsTrigger>
             <TabsTrigger value="images">إدارة الصور</TabsTrigger>
+            <TabsTrigger value="promo">البرومو</TabsTrigger>
+            <TabsTrigger value="channels">القنوات المباشرة</TabsTrigger>
           </TabsList>
 
           {/* ==================== تبويب المسلسلات ==================== */}
@@ -475,7 +477,285 @@ export default function Admin() {
               </Card>
             )}
           </TabsContent>
+
+          {/* ==================== تبويب البرومو ==================== */}
+          <TabsContent value="promo" className="space-y-4">
+            <PromoManager seriesId={selectedSeries} />
+          </TabsContent>
+
+          {/* ==================== تبويب القنوات ==================== */}
+          <TabsContent value="channels" className="space-y-4">
+            <ChannelsManager />
+          </TabsContent>
         </Tabs>
+      </div>
+    </div>
+  );
+}
+
+// ==================== مكون إدارة البرومو ====================
+function PromoManager({ seriesId }: { seriesId: number | null }) {
+  const [promoUrl, setPromoUrl] = useState("");
+  const [promoTitle, setPromoTitle] = useState("");
+  const updatePromoMutation = trpc.promo.update.useMutation();
+  const { data: promo } = trpc.promo.get.useQuery(
+    { seriesId: seriesId || 0 },
+    { enabled: !!seriesId }
+  );
+
+  const handleUpdatePromo = async () => {
+    if (!seriesId || !promoUrl.trim()) {
+      toast.error("اختر مسلسلاً وأدخل رابط البرومو");
+      return;
+    }
+
+    try {
+      await updatePromoMutation.mutateAsync({
+        seriesId,
+        promoUrl,
+        promoTitle: promoTitle || "برومو",
+      });
+      toast.success("تم تحديث البرومو بنجاح");
+      setPromoUrl("");
+      setPromoTitle("");
+    } catch (error: any) {
+      toast.error(error.message || "فشل تحديث البرومو");
+    }
+  };
+
+  if (!seriesId) {
+    return (
+      <Card className="bg-secondary border-border">
+        <CardContent className="p-8 text-center">
+          <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">اختر مسلسلاً من تبويب المسلسلات أولاً</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-secondary border-border">
+      <CardHeader>
+        <CardTitle>إضافة برومو</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {promo && promo.promoUrl && (
+          <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+            <p className="text-sm text-primary mb-2">البرومو الحالي:</p>
+            <p className="text-sm text-foreground break-all">{promo.promoUrl}</p>
+          </div>
+        )}
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">
+            رابط البرومو (YouTube أو فيديو)
+          </label>
+          <Input
+            type="url"
+            placeholder="https://www.youtube.com/watch?v=..."
+            value={promoUrl}
+            onChange={(e) => setPromoUrl(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">
+            عنوان البرومو (اختياري)
+          </label>
+          <Input
+            placeholder="مثل: البرومو الرسمي"
+            value={promoTitle}
+            onChange={(e) => setPromoTitle(e.target.value)}
+          />
+        </div>
+        <Button
+          onClick={handleUpdatePromo}
+          disabled={updatePromoMutation.isPending}
+          className="w-full"
+        >
+          {updatePromoMutation.isPending ? "جاري التحديث..." : "تحديث البرومو"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ==================== مكون إدارة القنوات ====================
+function ChannelsManager() {
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    nameAr: "",
+    logoUrl: "",
+    streamUrl: "",
+    streamType: "youtube" as "youtube" | "m3u8",
+    descriptionAr: "",
+  });
+
+  const { data: channels = [], refetch } = trpc.channels.list.useQuery();
+  const createChannelMutation = trpc.channels.create.useMutation();
+  const deleteChannelMutation = trpc.channels.delete.useMutation();
+
+  const handleCreateChannel = async () => {
+    if (!formData.nameAr.trim() || !formData.streamUrl.trim()) {
+      toast.error("ملء الحقول المطلوبة");
+      return;
+    }
+
+    try {
+      await createChannelMutation.mutateAsync({
+        name: formData.name || formData.nameAr,
+        nameAr: formData.nameAr,
+        logoUrl: formData.logoUrl || undefined,
+        streamUrl: formData.streamUrl,
+        streamType: formData.streamType,
+        descriptionAr: formData.descriptionAr || undefined,
+      });
+      toast.success("تم إضافة القناة بنجاح");
+      setFormData({
+        name: "",
+        nameAr: "",
+        logoUrl: "",
+        streamUrl: "",
+        streamType: "youtube",
+        descriptionAr: "",
+      });
+      setShowForm(false);
+      refetch();
+    } catch (error: any) {
+      toast.error(error.message || "فشل إضافة القناة");
+    }
+  };
+
+  const handleDeleteChannel = async (id: number) => {
+    try {
+      await deleteChannelMutation.mutateAsync({ id });
+      toast.success("تم حذف القناة بنجاح");
+      refetch();
+    } catch (error: any) {
+      toast.error(error.message || "فشل حذف القناة");
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <Button onClick={() => setShowForm(!showForm)} className="w-full">
+        <Plus className="w-4 h-4 mr-2" />
+        {showForm ? "إلغاء" : "إضافة قناة جديدة"}
+      </Button>
+
+      {showForm && (
+        <Card className="bg-secondary border-border">
+          <CardHeader>
+            <CardTitle>إضافة قناة مباشرة</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                اسم القناة (عربي)
+              </label>
+              <Input
+                placeholder="مثل: قناة العربية"
+                value={formData.nameAr}
+                onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                اسم القناة (انجليزي)
+              </label>
+              <Input
+                placeholder="Channel Name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                رابط اللوقو (اختياري)
+              </label>
+              <Input
+                type="url"
+                placeholder="https://example.com/logo.png"
+                value={formData.logoUrl}
+                onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                نوع البث
+              </label>
+              <select
+                value={formData.streamType}
+                onChange={(e) => setFormData({ ...formData, streamType: e.target.value as "youtube" | "m3u8" })}
+                className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground"
+              >
+                <option value="youtube">YouTube</option>
+                <option value="m3u8">M3U8 Stream</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                رابط البث
+              </label>
+              <Input
+                type="url"
+                placeholder="https://www.youtube.com/watch?v=... أو https://example.com/stream.m3u8"
+                value={formData.streamUrl}
+                onChange={(e) => setFormData({ ...formData, streamUrl: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                الوصف (اختياري)
+              </label>
+              <Input
+                placeholder="وصف القناة"
+                value={formData.descriptionAr}
+                onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
+              />
+            </div>
+            <Button
+              onClick={handleCreateChannel}
+              disabled={createChannelMutation.isPending}
+              className="w-full"
+            >
+              {createChannelMutation.isPending ? "جاري الإضافة..." : "إضافة القناة"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* قائمة القنوات */}
+      <div className="space-y-2">
+        {channels.length === 0 ? (
+          <Card className="bg-secondary border-border">
+            <CardContent className="p-8 text-center">
+              <p className="text-muted-foreground">لا توجد قنوات بعد</p>
+            </CardContent>
+          </Card>
+        ) : (
+          channels.map((channel) => (
+            <Card key={channel.id} className="bg-secondary border-border">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-foreground">{channel.nameAr}</h3>
+                  <p className="text-sm text-muted-foreground">{channel.name}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {channel.streamType === "youtube" ? "YouTube" : "M3U8"}
+                  </p>
+                </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleDeleteChannel(channel.id)}
+                  disabled={deleteChannelMutation.isPending}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   );
