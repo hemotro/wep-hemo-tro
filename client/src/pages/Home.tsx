@@ -62,7 +62,7 @@ export default function Home() {
         {currentSeries && (
           <div className="relative">
             {/* الصورة الكبيرة */}
-            <div className="relative w-full h-64 md:h-96 overflow-hidden bg-gradient-to-br from-primary/20 to-background">
+            <div className="relative w-full h-80 md:h-[500px] lg:h-[600px] overflow-hidden bg-gradient-to-br from-primary/20 to-background">
               {currentBanner && (
                 <>
                   <img
@@ -75,13 +75,13 @@ export default function Home() {
               )}
 
               {/* معلومات المسلسل */}
-              <div className="absolute bottom-0 left-0 right-0 p-4">
-                <h2 className="text-2xl font-bold text-foreground mb-1">{currentSeries.titleAr}</h2>
-                <p className="text-primary text-sm mb-3">{currentSeries.genre}</p>
+              <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 bg-gradient-to-t from-black via-black/50 to-transparent">
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">{currentSeries.titleAr}</h2>
+                <p className="text-primary text-base md:text-lg mb-4">{currentSeries.genre}</p>
                 <Link href={`/series/${currentSeries.id}`}>
                   <a>
-                    <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-                      <Play className="w-4 h-4 mr-2" />
+                    <Button className="w-full md:w-64 bg-primary hover:bg-primary/90 text-primary-foreground text-base py-3">
+                      <Play className="w-5 h-5 mr-2" />
                       شاهد الآن
                     </Button>
                   </a>
