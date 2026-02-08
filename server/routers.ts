@@ -11,7 +11,8 @@ import {
   addSeriesImage, getSeriesImages, deleteSeriesImage, setDefaultImage,
   createChannel, getAllChannels, getChannelById, updateChannel, deleteChannel,
   updateSeriesPromo, getSeriesPromo,
-  createUploadedVideo, getUploadedVideoByEpisodeId, updateEpisodeVideo, deleteUploadedVideo
+  createUploadedVideo, getUploadedVideoByEpisodeId, updateEpisodeVideo, deleteUploadedVideo,
+  saveWatchHistory, getWatchHistory, getUserSeriesWatchHistory
 } from "./db";
 import { storagePut } from "./storage";
 import { TRPCError } from "@trpc/server";
@@ -605,8 +606,62 @@ export const appRouter = router({
             message: error.message || "فشل حذف الفيديو",
           });
         }
+       }),
+  }),
+  
+  watchHistory: router({
+    save: protectedProcedure
+      .input(z.object({
+        episodeId: z.number(),
+        seriesId: z.number(),
+        currentTime: z.number(),
+        duration: z.number(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          await saveWatchHistory(
+            ctx.user!.id,
+            input.episodeId,
+            input.seriesId,
+            input.currentTime,
+            input.duration
+          );
+          return { success: true };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل حفظ سجل المشاهدة",
+          });
+        }
+      }),
+    
+    get: protectedProcedure
+      .input(z.object({ episodeId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        try {
+          const history = await getWatchHistory(ctx.user!.id, input.episodeId);
+          return history;
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل جلب سجل المشاهدة",
+          });
+        }
+      }),
+    
+    getSeriesHistory: protectedProcedure
+      .input(z.object({ seriesId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        try {
+          const history = await getUserSeriesWatchHistory(ctx.user!.id, input.seriesId);
+          return history;
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل جلب سجل المسلسل",
+          });
+        }
       }),
   }),
 });
-
 export type AppRouter = typeof appRouter;

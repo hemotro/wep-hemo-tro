@@ -150,3 +150,22 @@ export const uploadedVideos = mysqlTable("uploadedVideos", {
 
 export type UploadedVideo = typeof uploadedVideos.$inferSelect;
 export type InsertUploadedVideo = typeof uploadedVideos.$inferInsert;
+
+
+/**
+ * جدول تتبع المشاهدة - لحفظ آخر موضع مشاهدة للمستخدم
+ */
+export const watchHistory = mysqlTable("watchHistory", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  episodeId: int("episodeId").notNull(),
+  seriesId: int("seriesId").notNull(),
+  currentTime: int("currentTime").default(0), // الموضع الحالي بالثواني
+  duration: int("duration").default(0), // مدة الفيديو بالثواني
+  isCompleted: boolean("isCompleted").default(false), // هل تمت مشاهدة الحلقة كاملة
+  lastWatchedAt: timestamp("lastWatchedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type WatchHistory = typeof watchHistory.$inferSelect;
+export type InsertWatchHistory = typeof watchHistory.$inferInsert;

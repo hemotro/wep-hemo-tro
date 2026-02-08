@@ -1,6 +1,6 @@
 import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, InsertFavorite, seriesImages, InsertSeriesImage, channels, Channel, InsertChannel, uploadedVideos } from "../drizzle/schema";
+import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, InsertFavorite, seriesImages, InsertSeriesImage, channels, Channel, InsertChannel, uploadedVideos, watchHistory, InsertWatchHistory } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import bcrypt from "bcrypt";
 
@@ -463,4 +463,68 @@ export async function deleteUploadedVideo(episodeId: number) {
   
   await db.delete(uploadedVideos).where(eq(uploadedVideos.episodeId, episodeId));
   return { success: true };
+}
+
+
+// ==================== تتبع المشاهدة ====================
+
+export async function saveWatchHistory(userId: number, episodeId: number, seriesId: number, currentTime: number, duration: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+  
+  // البحث عن سجل موجود
+  const existing = await db.select().from(watchHistory).where(
+    and(
+      eq(watchHistory.userId, userId),
+      eq(watchHistory.episodeId, episodeId)
+    )
+  ).limit(1);
+  
+  if (existing.length > 0) {
+    // تحديث السجل الموجود
+    await db.update(watchHistory).set({
+      currentTime,
+      duration,
+      isCompleted: currentTime >= duration * 0.9, // 90% من الفيديو
+      lastWatchedAt: new Date(),
+    }).where(eq(watchHistory.id, existing[0].id));
+  } else {
+    // إنشاء سجل جديد
+    await db.insert(watchHistory).values({
+      userId,
+      episodeId,
+      seriesId,
+      currentTime,
+      duration,
+      isCompleted: currentTime >= duration * 0.9,
+    });
+  }
+}
+
+export async function getWatchHistory(userId: number, episodeId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(watchHistory).where(
+    and(
+      eq(watchHistory.userId, userId),
+      eq(watchHistory.episodeId, episodeId)
+    )
+  ).limit(1);
+  
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function getUserSeriesWatchHistory(userId: number, seriesId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db.select().from(watchHistory).where(
+    and(
+      eq(watchHistory.userId, userId),
+      eq(watchHistory.seriesId, seriesId)
+    )
+  );
+  
+  return result;
 }

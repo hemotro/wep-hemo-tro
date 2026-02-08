@@ -71,6 +71,13 @@
       "when": 1770590322533,
       "tag": "0009_normal_zombie",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1770591221840,
+      "tag": "0010_parallel_infant_terrible",
+      "breakpoints": true
     }
   ]
 }
