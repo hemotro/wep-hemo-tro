@@ -46,6 +46,7 @@ export default function Admin() {
   const createEpisodeMutation = trpc.episodes.create.useMutation();
   const updateEpisodeMutation = trpc.episodes.update.useMutation();
   const deleteEpisodeMutation = trpc.episodes.delete.useMutation();
+  const uploadVideoMutation = trpc.videos.upload.useMutation();
 
   // ==================== نماذج ====================
 
@@ -61,6 +62,7 @@ export default function Admin() {
     titleAr: "",
     videoUrl: "",
     thumbnailUrl: "",
+    videoFile: null as File | null,
   });
 
   // ==================== معالجات المسلسلات ====================
@@ -136,25 +138,43 @@ export default function Admin() {
       toast.error("اختر مسلسل أولاً");
       return;
     }
-    if (!episodeForm.titleAr.trim() || !episodeForm.videoUrl.trim()) {
-      toast.error("جميع الحقول مطلوبة");
+    if (!episodeForm.titleAr.trim()) {
+      toast.error("اسم الحلقة مطلوب");
+      return;
+    }
+    if (!episodeForm.videoFile && !episodeForm.videoUrl) {
+      toast.error("يجب رفع فيديو أو إدخال رابط يوتيوب");
       return;
     }
 
     try {
       const episodeNumber = parseInt(episodeForm.episodeNumber) || (episodes?.length || 0) + 1;
       
-      await createEpisodeMutation.mutateAsync({
+      // إنشاء الحلقة أولاً
+      const createdEpisode = await createEpisodeMutation.mutateAsync({
         seriesId: selectedSeries,
         season: 1,
         episodeNumber,
         titleAr: episodeForm.titleAr,
-        videoUrl: episodeForm.videoUrl,
+        videoUrl: episodeForm.videoUrl || "",
         thumbnailUrl: episodeForm.thumbnailUrl || undefined,
       });
+
+      // إذا تم رفع ملف فيديو، قم برفعه
+      if (episodeForm.videoFile && createdEpisode && 'id' in createdEpisode) {
+        const fileBuffer = await episodeForm.videoFile.arrayBuffer();
+        await uploadVideoMutation.mutateAsync({
+          episodeId: (createdEpisode as any).id,
+          fileName: episodeForm.videoFile.name,
+          fileBuffer: new Uint8Array(fileBuffer) as any,
+          fileSize: episodeForm.videoFile.size,
+          mimeType: episodeForm.videoFile.type,
+          duration: 0,
+        });
+      }
       
       toast.success("تم إضافة الحلقة بنجاح!");
-      setEpisodeForm({ episodeNumber: "", titleAr: "", videoUrl: "", thumbnailUrl: "" });
+      setEpisodeForm({ episodeNumber: "", titleAr: "", videoUrl: "", thumbnailUrl: "", videoFile: null });
       setShowEpisodeForm(false);
       refetchEpisodes();
     } catch (error: any) {
@@ -391,7 +411,31 @@ export default function Admin() {
 
                         <div>
                           <label className="block text-sm font-medium text-foreground mb-2">
-                            رابط يوتيوب
+                            رفع ملف الفيديو
+                          </label>
+                          <Input
+                            type="file"
+                            accept="video/*"
+                            onChange={(e) => setEpisodeForm(prev => ({ ...prev, videoFile: e.target.files?.[0] || null }))}
+                            className="bg-background border-border text-foreground"
+                          />
+                          {episodeForm.videoFile && (
+                            <p className="text-sm text-green-600 mt-2">✓ تم اختيار: {episodeForm.videoFile.name}</p>
+                          )}
+                        </div>
+
+                        <div className="relative">
+                          <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-border"></div>
+                          </div>
+                          <div className="relative flex justify-center text-sm">
+                            <span className="px-2 bg-secondary text-muted-foreground">أو</span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">
+                            رابط يوتيوب (بديل)
                           </label>
                           <Input
                             value={episodeForm.videoUrl}

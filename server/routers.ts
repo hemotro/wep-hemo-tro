@@ -10,8 +10,10 @@ import {
   addFavorite, removeFavorite, getUserFavorites, isFavorite,
   addSeriesImage, getSeriesImages, deleteSeriesImage, setDefaultImage,
   createChannel, getAllChannels, getChannelById, updateChannel, deleteChannel,
-  updateSeriesPromo, getSeriesPromo
+  updateSeriesPromo, getSeriesPromo,
+  createUploadedVideo, getUploadedVideoByEpisodeId, updateEpisodeVideo, deleteUploadedVideo
 } from "./db";
+import { storagePut } from "./storage";
 import { TRPCError } from "@trpc/server";
 
 // إنشاء adminProcedure للعمليات الإدارية فقط
@@ -527,6 +529,80 @@ export const appRouter = router({
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: error.message || "فشل حذف القناة",
+          });
+        }
+      }),
+  }),
+
+  // ==================== الفيديوهات المرفوعة ====================
+  videos: router({
+    upload: adminProcedure
+      .input(z.object({
+        episodeId: z.number(),
+        fileName: z.string(),
+        fileBuffer: z.instanceof(Buffer),
+        fileSize: z.number(),
+        mimeType: z.string(),
+        duration: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          // رفع الملف إلى S3
+          const fileKey = `videos/episode-${input.episodeId}-${Date.now()}-${input.fileName}`;
+          const { url } = await storagePut(fileKey, input.fileBuffer, input.mimeType);
+
+          // حفظ معلومات الفيديو في قاعدة البيانات
+          await createUploadedVideo({
+            episodeId: input.episodeId,
+            fileName: input.fileName,
+            fileKey,
+            fileUrl: url,
+            fileSize: input.fileSize,
+            mimeType: input.mimeType,
+            duration: input.duration,
+            uploadedBy: ctx.user!.id,
+          });
+
+          // تحديث الحلقة برابط الفيديو
+          await updateEpisodeVideo(input.episodeId, {
+            fileUrl: url,
+            fileSize: input.fileSize,
+            duration: input.duration,
+          });
+
+          return { success: true, message: "تم رفع الفيديو بنجاح", url };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message || "فشل رفع الفيديو",
+          });
+        }
+      }),
+
+    getByEpisode: publicProcedure
+      .input(z.object({ episodeId: z.number() }))
+      .query(async ({ input }) => {
+        try {
+          const video = await getUploadedVideoByEpisodeId(input.episodeId);
+          return video;
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل جلب الفيديو",
+          });
+        }
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ episodeId: z.number() }))
+      .mutation(async ({ input }) => {
+        try {
+          await deleteUploadedVideo(input.episodeId);
+          return { success: true, message: "تم حذف الفيديو بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message || "فشل حذف الفيديو",
           });
         }
       }),

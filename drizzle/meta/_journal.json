@@ -57,6 +57,20 @@
       "when": 1770502137725,
       "tag": "0007_large_kingpin",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1770590248105,
+      "tag": "0008_striped_blindfold",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1770590322533,
+      "tag": "0009_normal_zombie",
+      "breakpoints": true
     }
   ]
 }

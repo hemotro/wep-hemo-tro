@@ -1,6 +1,6 @@
 import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, InsertFavorite, seriesImages, InsertSeriesImage, channels, Channel, InsertChannel } from "../drizzle/schema";
+import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, InsertFavorite, seriesImages, InsertSeriesImage, channels, Channel, InsertChannel, uploadedVideos } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import bcrypt from "bcrypt";
 
@@ -410,4 +410,57 @@ export async function getSeriesPromo(seriesId: number) {
     promoUrl: s.promoUrl,
     promoTitle: s.promoTitle,
   };
+}
+
+
+// ==================== الفيديوهات المرفوعة ====================
+
+// ==================== الفيديوهات المرفوعة ====================
+
+export async function createUploadedVideo(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+  
+  const result = await db.insert(uploadedVideos).values({
+    episodeId: data.episodeId,
+    fileName: data.fileName,
+    fileKey: data.fileKey,
+    fileUrl: data.fileUrl,
+    fileSize: data.fileSize,
+    mimeType: data.mimeType,
+    duration: data.duration,
+    uploadedBy: data.uploadedBy,
+  });
+  
+  return result;
+}
+
+export async function getUploadedVideoByEpisodeId(episodeId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(uploadedVideos).where(eq(uploadedVideos.episodeId, episodeId)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function updateEpisodeVideo(episodeId: number, videoData: any) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+  
+  await db.update(episodes).set({
+    videoUrl: videoData.fileUrl,
+    videoType: "mp4",
+    videoSize: videoData.fileSize,
+    videoDuration: videoData.duration,
+  }).where(eq(episodes.id, episodeId));
+  
+  return { success: true };
+}
+
+export async function deleteUploadedVideo(episodeId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+  
+  await db.delete(uploadedVideos).where(eq(uploadedVideos.episodeId, episodeId));
+  return { success: true };
 }

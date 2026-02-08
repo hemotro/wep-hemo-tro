@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, bigint } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -82,6 +82,9 @@ export const episodes = mysqlTable("episodes", {
   description: text("description"),
   descriptionAr: text("descriptionAr"),
   videoUrl: varchar("videoUrl", { length: 500 }).notNull(),
+  videoType: mysqlEnum("videoType", ["youtube", "m3u8", "mp4"]).default("youtube"),
+  videoSize: int("videoSize"),
+  videoDuration: int("videoDuration"),
   thumbnailUrl: varchar("thumbnailUrl", { length: 500 }),
   duration: int("duration"),
   releaseDate: timestamp("releaseDate"),
@@ -126,3 +129,24 @@ export const channels = mysqlTable("channels", {
 export type Channel = typeof channels.$inferSelect;
 export type InsertChannel = typeof channels.$inferInsert;
 
+
+
+/**
+ * جدول تخزين الفيديوهات المرفوعة
+ */
+export const uploadedVideos = mysqlTable("uploadedVideos", {
+  id: int("id").autoincrement().primaryKey(),
+  episodeId: int("episodeId").notNull(),
+  fileName: varchar("fileName", { length: 255 }).notNull(),
+  fileKey: varchar("fileKey", { length: 500 }).notNull(),
+  fileUrl: varchar("fileUrl", { length: 500 }).notNull(),
+  fileSize: int("fileSize").notNull(),
+  mimeType: varchar("mimeType", { length: 100 }).notNull(),
+  duration: int("duration"),
+  uploadedBy: int("uploadedBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UploadedVideo = typeof uploadedVideos.$inferSelect;
+export type InsertUploadedVideo = typeof uploadedVideos.$inferInsert;
