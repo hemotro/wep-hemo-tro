@@ -3,7 +3,7 @@
  * يدعم جميع تنسيقات الفيديو والجودات المتعددة
  */
 import { useRef, useState, useEffect } from "react";
-import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, AlertCircle, Settings } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize2, Minimize2, AlertCircle, Settings } from "lucide-react";
 
 interface VideoQuality {
   label: string;
@@ -45,6 +45,8 @@ export default function VideoPlayer({
   const controlsTimeoutRef = useRef<any>(null);
   const qualitiesRef = useRef<HTMLDivElement>(null);
 
+  const selectedQuality = qualities[currentQuality]?.label || "خودکار";
+
   // تحديد نوع الفيديو تلقائياً
   const detectVideoType = (url: string): string => {
     if (type !== 'auto') return type;
@@ -63,7 +65,7 @@ export default function VideoPlayer({
   const hasQualities = qualities && qualities.length > 0;
 
   // تشغيل/إيقاف الفيديو - فقط عند الضغط على الزر
-  const togglePlay = (e?: React.MouseEvent) => {
+  const togglePlayPause = (e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
     }
@@ -289,19 +291,19 @@ export default function VideoPlayer({
       {/* التحكم */}
       {!videoError && (
         <div
-          className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/50 to-transparent p-4 transition-opacity duration-300 ${
+          className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/50 to-transparent p-2 transition-opacity duration-300 ${
             showControls ? "opacity-100" : "opacity-0"
           }`}
         >
           {/* شريط التقدم */}
-          <div className="mb-3">
+          <div className="mb-2">
             <input
               type="range"
               min="0"
               max={duration || 0}
               value={currentTime}
               onChange={handleSeek}
-              className="w-full h-1 bg-gray-700 rounded cursor-pointer appearance-none hover:h-2 transition-all"
+              className="w-full h-0.5 bg-gray-700 rounded cursor-pointer appearance-none hover:h-1 transition-all"
               style={{
                 background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${progress}%, #374151 ${progress}%, #374151 100%)`,
               }}
@@ -309,33 +311,33 @@ export default function VideoPlayer({
           </div>
 
           {/* أزرار التحكم */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-1 text-xs">
             {/* الأزرار اليسرى */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               {/* زر التشغيل/الإيقاف */}
               <button
-                onClick={togglePlay}
-                className="p-2 hover:bg-white/20 rounded transition-colors"
+                onClick={togglePlayPause}
+                className="p-1 hover:bg-white/20 rounded transition-colors"
                 title={isPlaying ? "إيقاف" : "تشغيل"}
               >
                 {isPlaying ? (
-                  <Pause className="w-5 h-5 text-white" />
+                  <Pause className="w-4 h-4 text-white" />
                 ) : (
-                  <Play className="w-5 h-5 text-white" />
+                  <Play className="w-4 h-4 text-white fill-white" />
                 )}
               </button>
 
               {/* التحكم بالصوت */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5">
                 <button
                   onClick={toggleMute}
-                  className="p-2 hover:bg-white/20 rounded transition-colors"
+                  className="p-1 hover:bg-white/20 rounded transition-colors"
                   title={isMuted ? "تفعيل الصوت" : "كتم الصوت"}
                 >
                   {isMuted ? (
-                    <VolumeX className="w-5 h-5 text-white" />
+                    <VolumeX className="w-4 h-4 text-white" />
                   ) : (
-                    <Volume2 className="w-5 h-5 text-white" />
+                    <Volume2 className="w-4 h-4 text-white" />
                   )}
                 </button>
                 <input
@@ -345,47 +347,41 @@ export default function VideoPlayer({
                   step="0.1"
                   value={volume}
                   onChange={handleVolumeChange}
-                  className="w-20 h-1 bg-gray-700 rounded cursor-pointer appearance-none"
+                  className="w-12 h-0.5 bg-gray-700 rounded cursor-pointer appearance-none hidden sm:inline-block"
+                  style={{
+                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${volume * 100}%, #374151 ${volume * 100}%, #374151 100%)`,
+                  }}
                 />
               </div>
 
-              {/* الوقت */}
-              <span className="text-white text-sm ml-2">
+              {/* عرض الوقت */}
+              <span className="text-white/80 whitespace-nowrap min-w-fit">
                 {formatTime(currentTime)} / {formatTime(duration)}
               </span>
             </div>
 
             {/* الأزرار اليمنى */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               {/* قائمة الجودات */}
               {hasQualities && (
                 <div className="relative" ref={qualitiesRef}>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowQualityMenu(!showQualityMenu);
-                    }}
-                    className="bg-gray-800 text-white text-sm px-2 py-1 rounded hover:bg-gray-700 transition-colors cursor-pointer flex items-center gap-1"
+                    onClick={() => setShowQualityMenu(!showQualityMenu)}
+                    className="p-1 hover:bg-white/20 rounded transition-colors flex items-center gap-0.5"
                     title="الجودة"
                   >
-                    <Settings className="w-4 h-4" />
-                    {qualities[currentQuality]?.label || "الجودة"}
+                    <Settings className="w-4 h-4 text-white" />
+                    <span className="text-white hidden sm:inline">{selectedQuality}</span>
                   </button>
-
-                  {/* قائمة الجودات المنسدلة */}
+                  
                   {showQualityMenu && (
-                    <div className="absolute bottom-full right-0 mb-2 bg-gray-900 rounded shadow-lg overflow-hidden z-50">
+                    <div className="absolute bottom-full right-0 mb-2 bg-black/90 rounded border border-white/20 overflow-hidden z-10">
                       {qualities.map((quality, index) => (
                         <button
                           key={index}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleQualityChange(index);
-                          }}
-                          className={`w-full px-4 py-2 text-sm text-left transition-colors ${
-                            currentQuality === index
-                              ? "bg-primary text-white"
-                              : "text-white hover:bg-gray-800"
+                          onClick={() => handleQualityChange(index)}
+                          className={`block w-full px-3 py-1 text-left text-white hover:bg-primary/50 transition-colors ${
+                            currentQuality === index ? "bg-primary" : ""
                           }`}
                         >
                           {quality.label}
@@ -396,48 +392,19 @@ export default function VideoPlayer({
                 </div>
               )}
 
-              {/* سرعة التشغيل */}
-              <select
-                value={playbackRate}
-                onChange={(e) => handlePlaybackRateChange(parseFloat(e.target.value))}
-                className="bg-gray-800 text-white text-sm px-2 py-1 rounded hover:bg-gray-700 transition-colors cursor-pointer"
-              >
-                <option value={0.5}>0.5x</option>
-                <option value={0.75}>0.75x</option>
-                <option value={1}>1x</option>
-                <option value={1.25}>1.25x</option>
-                <option value={1.5}>1.5x</option>
-                <option value={2}>2x</option>
-              </select>
-
               {/* زر ملء الشاشة */}
               <button
                 onClick={toggleFullscreen}
-                className="p-2 hover:bg-white/20 rounded transition-colors"
-                title={isFullscreen ? "خروج من ملء الشاشة" : "ملء الشاشة"}
+                className="p-1 hover:bg-white/20 rounded transition-colors"
+                title={isFullscreen ? "خروج ملء الشاشة" : "ملء الشاشة"}
               >
                 {isFullscreen ? (
-                  <Minimize className="w-5 h-5 text-white" />
+                  <Minimize2 className="w-4 h-4 text-white" />
                 ) : (
-                  <Maximize className="w-5 h-5 text-white" />
+                  <Maximize2 className="w-4 h-4 text-white" />
                 )}
               </button>
             </div>
-          </div>
-
-          {/* عنوان الحلقة */}
-          {title && <p className="text-white text-sm mt-2">{title}</p>}
-        </div>
-      )}
-
-      {/* زر التشغيل الكبير في المنتصف */}
-      {!isPlaying && !videoError && (
-        <div
-          className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer hover:bg-black/40 transition-colors"
-          onClick={togglePlay}
-        >
-          <div className="bg-blue-600 hover:bg-blue-700 p-4 rounded-full transition-colors">
-            <Play className="w-12 h-12 text-white fill-white" />
           </div>
         </div>
       )}
