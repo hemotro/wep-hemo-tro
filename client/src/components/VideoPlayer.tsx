@@ -1,9 +1,14 @@
 /**
  * مشغل فيديو احترافي مخصص لـ hemo tro
- * يدعم جميع تنسيقات الفيديو (MP4, HLS, DASH) والتحكم الكامل
+ * يدعم جميع تنسيقات الفيديو والجودات المتعددة
  */
 import { useRef, useState, useEffect } from "react";
-import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, AlertCircle } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, AlertCircle, Settings } from "lucide-react";
+
+interface VideoQuality {
+  label: string;
+  url: string;
+}
 
 interface VideoPlayerProps {
   src: string;
@@ -11,6 +16,7 @@ interface VideoPlayerProps {
   poster?: string;
   onEnded?: () => void;
   type?: 'video/mp4' | 'application/x-mpegURL' | 'application/dash+xml' | 'auto';
+  qualities?: VideoQuality[];
 }
 
 export default function VideoPlayer({
@@ -19,6 +25,7 @@ export default function VideoPlayer({
   poster,
   onEnded,
   type = 'auto',
+  qualities = [],
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -32,7 +39,11 @@ export default function VideoPlayer({
   const [showControls, setShowControls] = useState(true);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showQualityMenu, setShowQualityMenu] = useState(false);
+  const [currentQuality, setCurrentQuality] = useState(0);
+  const [currentSrc, setCurrentSrc] = useState(src);
   const controlsTimeoutRef = useRef<any>(null);
+  const qualitiesRef = useRef<HTMLDivElement>(null);
 
   // تحديد نوع الفيديو تلقائياً
   const detectVideoType = (url: string): string => {
@@ -48,10 +59,14 @@ export default function VideoPlayer({
     return 'video/mp4';
   };
 
-  const videoType = detectVideoType(src);
+  const videoType = detectVideoType(currentSrc);
+  const hasQualities = qualities && qualities.length > 0;
 
-  // تشغيل/إيقاف الفيديو
-  const togglePlay = () => {
+  // تشغيل/إيقاف الفيديو - فقط عند الضغط على الزر
+  const togglePlay = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
@@ -64,8 +79,16 @@ export default function VideoPlayer({
     }
   };
 
+  // منع التشغيل/الإيقاف عند الضغط على الفيديو
+  const handleVideoClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   // كتم الصوت
-  const toggleMute = () => {
+  const toggleMute = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
     if (videoRef.current) {
       videoRef.current.muted = !isMuted;
       setIsMuted(!isMuted);
@@ -73,7 +96,10 @@ export default function VideoPlayer({
   };
 
   // ملء الشاشة
-  const toggleFullscreen = async () => {
+  const toggleFullscreen = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
     if (!containerRef.current) return;
 
     try {
@@ -112,6 +138,31 @@ export default function VideoPlayer({
   const handleVideoError = () => {
     setVideoError('فشل تحميل الفيديو. يرجى التحقق من رابط الفيديو.');
     setIsLoading(false);
+  };
+
+  // تغيير الجودة
+  const handleQualityChange = (index: number) => {
+    if (qualities[index]) {
+      const currentTimeBackup = videoRef.current?.currentTime || 0;
+      const wasPlaying = isPlaying;
+      
+      setCurrentQuality(index);
+      setCurrentSrc(qualities[index].url);
+      setShowQualityMenu(false);
+      setIsLoading(true);
+
+      // استئناف التشغيل من نفس النقطة
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.currentTime = currentTimeBackup;
+          if (wasPlaying) {
+            videoRef.current.play().catch(() => {
+              setVideoError('فشل تشغيل الفيديو');
+            });
+          }
+        }
+      }, 500);
+    }
   };
 
   // تغيير الوقت
@@ -153,6 +204,20 @@ export default function VideoPlayer({
     }
   };
 
+  // إغلاق قائمة الجودات عند الضغط خارجها
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (qualitiesRef.current && !qualitiesRef.current.contains(e.target as Node)) {
+        setShowQualityMenu(false);
+      }
+    };
+
+    if (showQualityMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showQualityMenu]);
+
   // تنسيق الوقت
   const formatTime = (seconds: number) => {
     if (!seconds || isNaN(seconds)) return "0:00";
@@ -185,7 +250,7 @@ export default function VideoPlayer({
           <div className="text-center">
             <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
             <p className="text-red-500 mb-2">{videoError}</p>
-            <p className="text-muted-foreground text-xs break-all max-w-xs">{src}</p>
+            <p className="text-muted-foreground text-xs break-all max-w-xs">{currentSrc}</p>
           </div>
         </div>
       ) : (
@@ -197,17 +262,17 @@ export default function VideoPlayer({
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
             onEnded={onEnded}
-            onClick={togglePlay}
+            onClick={handleVideoClick}
             onError={handleVideoError}
             crossOrigin="anonymous"
             controls={false}
           >
             {videoType === 'application/x-mpegURL' ? (
-              <source src={src} type="application/x-mpegURL" />
+              <source src={currentSrc} type="application/x-mpegURL" />
             ) : videoType === 'application/dash+xml' ? (
-              <source src={src} type="application/dash+xml" />
+              <source src={currentSrc} type="application/dash+xml" />
             ) : (
-              <source src={src} type="video/mp4" />
+              <source src={currentSrc} type="video/mp4" />
             )}
             متصفحك لا يدعم عنصر الفيديو.
           </video>
@@ -292,6 +357,45 @@ export default function VideoPlayer({
 
             {/* الأزرار اليمنى */}
             <div className="flex items-center gap-2">
+              {/* قائمة الجودات */}
+              {hasQualities && (
+                <div className="relative" ref={qualitiesRef}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowQualityMenu(!showQualityMenu);
+                    }}
+                    className="bg-gray-800 text-white text-sm px-2 py-1 rounded hover:bg-gray-700 transition-colors cursor-pointer flex items-center gap-1"
+                    title="الجودة"
+                  >
+                    <Settings className="w-4 h-4" />
+                    {qualities[currentQuality]?.label || "الجودة"}
+                  </button>
+
+                  {/* قائمة الجودات المنسدلة */}
+                  {showQualityMenu && (
+                    <div className="absolute bottom-full right-0 mb-2 bg-gray-900 rounded shadow-lg overflow-hidden z-50">
+                      {qualities.map((quality, index) => (
+                        <button
+                          key={index}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleQualityChange(index);
+                          }}
+                          className={`w-full px-4 py-2 text-sm text-left transition-colors ${
+                            currentQuality === index
+                              ? "bg-primary text-white"
+                              : "text-white hover:bg-gray-800"
+                          }`}
+                        >
+                          {quality.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* سرعة التشغيل */}
               <select
                 value={playbackRate}

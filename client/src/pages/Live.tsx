@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Play } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import VideoPlayer from "@/components/VideoPlayer";
 
 export default function Live() {
   const { data: channels = [], isLoading } = trpc.channels.list.useQuery();
@@ -15,7 +16,7 @@ export default function Live() {
   };
 
   return (
-    <div className="flex-1 pb-20">
+    <div className="flex-1 pb-20 bg-background">
       {/* عنوان الصفحة */}
       <div className="px-4 py-6 border-b border-border">
         <h1 className="text-3xl font-bold text-foreground">البث المباشر</h1>
@@ -36,11 +37,11 @@ export default function Live() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 p-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 p-4 max-w-7xl mx-auto">
           {/* قائمة القنوات */}
           <div className="lg:col-span-1">
             <h2 className="text-lg font-bold text-foreground mb-4">القنوات</h2>
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-96 overflow-y-auto">
               {channels.map((channel) => (
                 <button
                   key={channel.id}
@@ -90,16 +91,14 @@ export default function Live() {
                       ></iframe>
                     </div>
                   ) : (
-                    <video
-                      width="100%"
-                      height="100%"
-                      controls
-                      autoPlay
-                      className="w-full aspect-video bg-black"
-                    >
-                      <source src={selectedChannelData.streamUrl} type="application/x-mpegURL" />
-                      متصفحك لا يدعم تشغيل الفيديو
-                    </video>
+                    <div className="w-full">
+                      <VideoPlayer
+                        src={selectedChannelData.streamUrl}
+                        title={selectedChannelData.nameAr}
+                        poster={selectedChannelData.logoUrl || undefined}
+                        type="application/x-mpegURL"
+                      />
+                    </div>
                   )}
                 </div>
 
