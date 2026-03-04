@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Heart } from "lucide-react";
 import { useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
+import VideoPlayer from "@/components/VideoPlayer";
 
 function FavoriteButton({ seriesId }: { seriesId: number }) {
   const { data: isFav } = trpc.favorites.isFavorite.useQuery({ seriesId });
@@ -66,11 +67,39 @@ export default function SeriesDetail() {
   const bannerImage = images.find(img => img.imageType === "banner" && img.isDefault);
   const bannerUrl = bannerImage?.imageUrl || series.posterUrl;
 
-  // استخراج معرف الفيديو من رابط يوتيوب
-  const getYoutubeEmbedUrl = (url: string) => {
-    if (!url) return "";
-    const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/live\/)([^&\n?#]+)/)?.[1];
-    return videoId ? `https://www.youtube.com/embed/${videoId}` : "";
+  // تحديث مشغل الفيديو بناءً على نوع الفيديو
+  const renderVideoPlayer = (episode: any) => {
+    if (!episode.videoUrl) return null;
+    
+    // إذا كان رابط YouTube
+    if (episode.videoUrl.includes("youtube.com") || episode.videoUrl.includes("youtu.be")) {
+      const videoId = episode.videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/live\/)([^&\n?#]+)/)?.[ 1];
+      if (videoId) {
+        return (
+          <div className="w-full aspect-video bg-black">
+            <iframe
+              width="100%"
+              height="100%"
+              src={`https://www.youtube.com/embed/${videoId}`}
+              title={`${series.titleAr} - الحلقة ${episode.episodeNumber}`}
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="w-full h-full"
+            ></iframe>
+          </div>
+        );
+      }
+    }
+    
+    // باقي الروابط (MP4, M3U8, إلخ.)
+    return (
+      <VideoPlayer
+        src={episode.videoUrl}
+        title={`${series.titleAr} - الحلقة ${episode.episodeNumber}`}
+        poster={episode.thumbnailUrl}
+      />
+    );
   };
 
   return (
@@ -90,17 +119,8 @@ export default function SeriesDetail() {
 
       {/* مشغل الفيديو الحالي */}
       {currentEpisode && (
-        <div className="w-full aspect-video bg-black">
-          <iframe
-            width="100%"
-            height="100%"
-            src={getYoutubeEmbedUrl(currentEpisode.videoUrl)}
-            title={`${series.titleAr} - الحلقة ${currentEpisode.episodeNumber}`}
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            className="w-full h-full"
-          ></iframe>
+        <div className="w-full bg-black">
+          {renderVideoPlayer(currentEpisode)}
         </div>
       )}
 

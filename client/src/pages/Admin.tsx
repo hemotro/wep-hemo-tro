@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Plus, Trash2, Play, AlertCircle, Edit2 } from "lucide-react";
+import { Plus, Trash2, Play, AlertCircle, Edit2, Link as LinkIcon } from "lucide-react";
 import { useState } from "react";
 import { SeriesImagesManager } from "@/components/SeriesImagesManager";
+import { useNotifications } from "@/components/Notifications";
 
 export default function Admin() {
   const { user } = useAuth();
@@ -59,10 +60,12 @@ export default function Admin() {
     episodeNumber: "",
     titleAr: "",
     thumbnailUrl: "",
-    videoFile: null as File | null,
+    videoUrl: "",
+    videoType: "mp4" as "mp4" | "m3u8",
   });
 
   const [isUploading, setIsUploading] = useState(false);
+  const { success: notifySuccess, error: notifyError } = useNotifications();
 
   // ==================== معالجات المسلسلات ====================
 
@@ -109,15 +112,15 @@ export default function Admin() {
   const handleAddEpisode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSeries) {
-      toast.error("اختر مسلسل أولاً");
+      notifyError("خطأ", "اختر مسلسل أولاً");
       return;
     }
     if (!episodeForm.titleAr.trim()) {
-      toast.error("اسم الحلقة مطلوب");
+      notifyError("خطأ", "اسم الحلقة مطلوب");
       return;
     }
-    if (!episodeForm.videoFile) {
-      toast.error("يجب رفع فيديو من جهازك");
+    if (!episodeForm.videoUrl.trim()) {
+      notifyError("خطأ", "يجب إدخال رابط الفيديو (mp4 أو m3u8)");
       return;
     }
 
@@ -125,35 +128,22 @@ export default function Admin() {
       setIsUploading(true);
       const episodeNumber = parseInt(episodeForm.episodeNumber) || (episodes?.length || 0) + 1;
       
-      // إنشاء الحلقة أولاً
-      const createdEpisode = await createEpisodeMutation.mutateAsync({
+      // إنشاء الحلقة برابط الفيديو مباشرة
+      await createEpisodeMutation.mutateAsync({
         seriesId: selectedSeries,
         season: 1,
         episodeNumber,
         titleAr: episodeForm.titleAr,
-        videoUrl: "",
+        videoUrl: episodeForm.videoUrl,
         thumbnailUrl: episodeForm.thumbnailUrl || undefined,
       });
-
-      // رفع ملف الفيديو
-      if (episodeForm.videoFile && createdEpisode && 'id' in createdEpisode) {
-        const fileBuffer = await episodeForm.videoFile.arrayBuffer();
-        await uploadVideoMutation.mutateAsync({
-          episodeId: (createdEpisode as any).id,
-          fileName: episodeForm.videoFile.name,
-          fileBuffer: new Uint8Array(fileBuffer) as any,
-          fileSize: episodeForm.videoFile.size,
-          mimeType: episodeForm.videoFile.type,
-          duration: 0,
-        });
-      }
       
-      toast.success("تم إضافة الحلقة بنجاح!");
-      setEpisodeForm({ episodeNumber: "", titleAr: "", thumbnailUrl: "", videoFile: null });
+      notifySuccess("تم بنجاح!", `تمت إضافة الحلقة ${episodeNumber} بنجاح`);
+      setEpisodeForm({ episodeNumber: "", titleAr: "", thumbnailUrl: "", videoUrl: "", videoType: "mp4" });
       setShowEpisodeForm(false);
       refetchEpisodes();
     } catch (error: any) {
-      toast.error(error.message || "فشل إضافة الحلقة");
+      notifyError("خطأ", error.message || "فشل إضافة الحلقة");
     } finally {
       setIsUploading(false);
     }
@@ -396,25 +386,37 @@ export default function Admin() {
 
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        رفع الفيديو من جهازك
+                        <LinkIcon className="w-4 h-4 inline mr-2" />
+                        رابط الفيديو
                       </label>
-                      <input
-                        type="file"
-                        accept="video/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            setEpisodeForm(prev => ({ ...prev, videoFile: file }));
-                            toast.success(`تم اختيار: ${file.name}`);
-                          }
-                        }}
-                        className="w-full p-2 bg-background border border-border rounded text-foreground"
-                      />
-                      {episodeForm.videoFile && (
-                        <p className="mt-2 text-sm text-green-600">
-                          ✓ تم اختيار: {episodeForm.videoFile.name}
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setEpisodeForm(prev => ({ ...prev, videoType: "mp4" }))}
+                            className={`flex-1 py-2 px-3 rounded text-sm font-medium transition ${episodeForm.videoType === "mp4" ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground hover:bg-secondary/80"}`}
+                          >
+                            MP4
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEpisodeForm(prev => ({ ...prev, videoType: "m3u8" }))}
+                            className={`flex-1 py-2 px-3 rounded text-sm font-medium transition ${episodeForm.videoType === "m3u8" ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground hover:bg-secondary/80"}`}
+                          >
+                            M3U8
+                          </button>
+                        </div>
+                        <Input
+                          type="url"
+                          value={episodeForm.videoUrl}
+                          onChange={(e) => setEpisodeForm(prev => ({ ...prev, videoUrl: e.target.value }))}
+                          placeholder={episodeForm.videoType === "mp4" ? "https://example.com/video.mp4" : "https://example.com/stream.m3u8"}
+                          className="bg-background border-border text-foreground"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {episodeForm.videoType === "mp4" ? "أدخل رابط ملف فيديو MP4" : "أدخل رابط بث M3U8 (HLS)"}
                         </p>
-                      )}
+                      </div>
                     </div>
 
                     <div>
@@ -439,7 +441,7 @@ export default function Admin() {
                         variant="outline"
                         onClick={() => {
                           setShowEpisodeForm(false);
-                          setEpisodeForm({ episodeNumber: "", titleAr: "", thumbnailUrl: "", videoFile: null });
+                          setEpisodeForm({ episodeNumber: "", titleAr: "", thumbnailUrl: "", videoUrl: "", videoType: "mp4" });
                         }}
                         className="flex-1"
                       >
