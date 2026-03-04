@@ -2,87 +2,135 @@ import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { Play } from "lucide-react";
-import HeroSection from "@/components/HeroSection";
-import { useEffect, useState } from "react";
+import { Play, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export default function Home() {
-  const { data: seriesList, isLoading: seriesLoading } = trpc.series.list.useQuery();
-  const { data: heroSlides, isLoading: slidesLoading } = trpc.heroSlides.list.useQuery();
-  const { data: announcements } = trpc.announcements.list.useQuery();
-  const [newSeries, setNewSeries] = useState<typeof seriesList>([]);
+  const { data: seriesList, isLoading } = trpc.series.list.useQuery();
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(true);
 
-  // الحصول على أحدث 5 مسلسلات
   useEffect(() => {
-    if (seriesList) {
-      const sorted = [...seriesList].sort((a, b) => {
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateB - dateA;
-      });
-      setNewSeries(sorted.slice(0, 5));
-    }
-  }, [seriesList]);
+    if (!autoPlay || !seriesList || seriesList.length === 0) return;
 
-  if (seriesLoading || slidesLoading) {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % seriesList.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [autoPlay, seriesList]);
+
+  if (isLoading) {
     return (
       <div className="flex-1 pb-20 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">جاري تحميل...</p>
+          <p className="text-muted-foreground">جاري تحميل المسلسلات...</p>
         </div>
       </div>
     );
   }
 
-  // تحويل بيانات السلايدات للـ HeroSection
-  const heroSlidesData = (heroSlides || []).map((slide: any) => ({
-    id: slide.id,
-    seriesId: slide.seriesId,
-    imageUrl: slide.imageUrl,
-    title: slide.title,
-    titleAr: slide.titleAr,
-  }));
+  if (!seriesList || seriesList.length === 0) {
+    return (
+      <div className="flex-1 pb-20 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-foreground mb-4">مرحباً بك في hemo tro</h1>
+          <p className="text-muted-foreground">لا توجد مسلسلات حالياً</p>
+        </div>
+      </div>
+    );
+  }
+
+  const currentSeries = seriesList[currentSlide];
+  const currentBanner = currentSeries?.posterUrl;
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % seriesList.length);
+    setAutoPlay(false);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + seriesList.length) % seriesList.length);
+    setAutoPlay(false);
+  };
 
   return (
     <div className="flex-1 pb-20">
-      {/* التنويهات */}
-      {announcements && announcements.length > 0 && (
-        <div className="px-4 pt-4 space-y-2">
-          {announcements.map((announcement: any) => (
-            <div
-              key={announcement.id}
-              className={`p-4 rounded-lg border-l-4 ${
-                announcement.type === "warning"
-                  ? "bg-yellow-500/10 border-yellow-500 text-yellow-700"
-                  : announcement.type === "error"
-                  ? "bg-red-500/10 border-red-500 text-red-700"
-                  : announcement.type === "success"
-                  ? "bg-green-500/10 border-green-500 text-green-700"
-                  : "bg-blue-500/10 border-blue-500 text-blue-700"
-              }`}
-            >
-              <h4 className="font-semibold">{announcement.titleAr}</h4>
-              <p className="text-sm mt-1">{announcement.contentAr}</p>
+      {/* Carousel في الأعلى */}
+      <div className="relative w-full">
+        {currentSeries && (
+          <div className="relative">
+            {/* الصورة الكبيرة */}
+            <div className="relative w-full h-80 md:h-[500px] lg:h-[600px] overflow-hidden bg-gradient-to-br from-primary/20 to-background">
+              {currentBanner && (
+                <>
+                  <img
+                    src={currentBanner}
+                    alt={currentSeries.titleAr}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
+                </>
+              )}
+
+              {/* معلومات المسلسل */}
+              <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 bg-gradient-to-t from-black via-black/50 to-transparent">
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">{currentSeries.titleAr}</h2>
+                <p className="text-primary text-base md:text-lg mb-4">{currentSeries.genre}</p>
+                <Link href={`/series/${currentSeries.id}`}>
+                  <a>
+                    <Button className="w-full md:w-64 bg-primary hover:bg-primary/90 text-primary-foreground text-base py-3">
+                      <Play className="w-5 h-5 mr-2" />
+                      شاهد الآن
+                    </Button>
+                  </a>
+                </Link>
+              </div>
+
+              {/* أزرار التنقل */}
+              <button
+                onClick={prevSlide}
+                className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors z-10"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+              <button
+                onClick={nextSlide}
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors z-10"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+
+              {/* مؤشرات الشرائح */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                {seriesList.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      setCurrentSlide(index);
+                      setAutoPlay(false);
+                    }}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      index === currentSlide ? "bg-primary w-6" : "bg-white/50"
+                    }`}
+                  />
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
-      {/* Hero Section */}
-      {heroSlidesData.length > 0 ? (
-        <HeroSection slides={heroSlidesData} isLoading={slidesLoading} />
-      ) : null}
-
-      {/* قسم الجديد */}
-      {newSeries && newSeries.length > 0 && (
-        <div className="px-4 py-8">
-          <h2 className="text-2xl font-bold text-foreground mb-6">الجديد</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {newSeries.map((series: any) => (
+      {/* قائمة أفقية للمسلسلات */}
+      <div className="px-4 py-6">
+        <h3 className="text-lg font-bold text-foreground mb-4">جميع المسلسلات</h3>
+        <div className="overflow-x-auto pb-4">
+          <div className="flex gap-4 min-w-min">
+            {seriesList.map((series) => (
               <Link key={series.id} href={`/series/${series.id}`}>
-                <a className="group">
-                  <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-muted">
+                <a className="flex-shrink-0 group">
+                  <div className="relative w-32 h-48 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-background">
                     {series.posterUrl ? (
                       <>
                         <img
@@ -90,86 +138,26 @@ export default function Home() {
                           alt={series.titleAr}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
-                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <Button
-                            size="sm"
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full"
-                          >
-                            <Play className="w-4 h-4 fill-current" />
+                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors flex items-end justify-center pb-3 opacity-0 group-hover:opacity-100">
+                          <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                            <Play className="w-3 h-3 mr-1" />
+                            شاهد
                           </Button>
                         </div>
                       </>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <p className="text-xs text-muted-foreground text-center px-2">
-                          {series.titleAr}
-                        </p>
+                      <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center">
+                        <p className="text-sm font-semibold text-foreground mb-2">{series.titleAr}</p>
+                        <p className="text-xs text-muted-foreground">{series.totalEpisodes} حلقة</p>
                       </div>
                     )}
                   </div>
-                  <p className="mt-2 text-sm font-medium text-foreground truncate">
-                    {series.titleAr}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{series.genre}</p>
                 </a>
               </Link>
             ))}
           </div>
         </div>
-      )}
-
-      {/* قائمة جميع المسلسلات */}
-      {seriesList && seriesList.length > 0 && (
-        <div className="px-4 py-8">
-          <h2 className="text-2xl font-bold text-foreground mb-6">جميع المسلسلات</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {seriesList.map((series: any) => (
-              <Link key={series.id} href={`/series/${series.id}`}>
-                <a className="group">
-                  <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-muted">
-                    {series.posterUrl ? (
-                      <>
-                        <img
-                          src={series.posterUrl}
-                          alt={series.titleAr}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <Button
-                            size="sm"
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full"
-                          >
-                            <Play className="w-4 h-4 fill-current" />
-                          </Button>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <p className="text-xs text-muted-foreground text-center px-2">
-                          {series.titleAr}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                  <p className="mt-2 text-sm font-medium text-foreground truncate">
-                    {series.titleAr}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{series.genre}</p>
-                </a>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {!seriesList || seriesList.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center py-12">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-foreground mb-4">مرحباً بك في hemo tro</h1>
-            <p className="text-muted-foreground">لا توجد مسلسلات حالياً</p>
-          </div>
-        </div>
-      ) : null}
+      </div>
     </div>
   );
 }

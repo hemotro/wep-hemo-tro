@@ -16,9 +16,6 @@ import {
 } from "./db";
 import { storagePut } from "./storage";
 import { TRPCError } from "@trpc/server";
-import { getDb } from "./db";
-import { heroSlides, announcements } from "../drizzle/schema";
-import { eq } from "drizzle-orm";
 
 // إنشاء adminProcedure للعمليات الإدارية فقط
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -662,116 +659,6 @@ export const appRouter = router({
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
             message: error.message || "فشل جلب سجل المسلسل",
-          });
-        }
-      }),
-  }),
-
-  // Hero Slides
-  heroSlides: router({
-    list: publicProcedure.query(async () => {
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-        const slides = await db.select().from(heroSlides).where(eq(heroSlides.isActive, true)).orderBy(heroSlides.displayOrder);
-        return slides;
-      } catch (error: any) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: error.message || "فشل جلب السلايدات",
-        });
-      }
-    }),
-
-    create: adminProcedure
-      .input(z.object({
-        seriesId: z.number(),
-        imageUrl: z.string().url(),
-        title: z.string(),
-        titleAr: z.string(),
-        displayOrder: z.number().default(0),
-      }))
-      .mutation(async ({ input }) => {
-        try {
-          const db = await getDb();
-          if (!db) throw new Error("Database not available");
-          await db.insert(heroSlides).values(input);
-          return { success: true };
-        } catch (error: any) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: error.message || "فشل إنشاء السلايد",
-          });
-        }
-      }),
-
-    delete: adminProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        try {
-          const db = await getDb();
-          if (!db) throw new Error("Database not available");
-          await db.delete(heroSlides).where(eq(heroSlides.id, input.id));
-          return { success: true };
-        } catch (error: any) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: error.message || "فشل حذف السلايد",
-          });
-        }
-      }),
-  }),
-
-  // Announcements
-  announcements: router({
-    list: publicProcedure.query(async () => {
-      try {
-        const db = await getDb();
-        if (!db) throw new Error("Database not available");
-        const items = await db.select().from(announcements).where(eq(announcements.isActive, true)).orderBy(announcements.displayOrder);
-        return items;
-      } catch (error: any) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: error.message || "فشل جلب التنويهات",
-        });
-      }
-    }),
-
-    create: adminProcedure
-      .input(z.object({
-        title: z.string(),
-        titleAr: z.string(),
-        content: z.string(),
-        contentAr: z.string(),
-        type: z.enum(["info", "warning", "error", "success"]).default("info"),
-      }))
-      .mutation(async ({ input }) => {
-        try {
-          const db = await getDb();
-          if (!db) throw new Error("Database not available");
-          await db.insert(announcements).values(input);
-          return { success: true };
-        } catch (error: any) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: error.message || "فشل إنشاء التنويه",
-          });
-        }
-      }),
-
-    delete: adminProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        try {
-          const db = await getDb();
-          if (!db) throw new Error("Database not available");
-          await db.delete(announcements).where(eq(announcements.id, input.id));
-          return { success: true };
-        } catch (error: any) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: error.message || "فشل حذف التنويه",
           });
         }
       }),

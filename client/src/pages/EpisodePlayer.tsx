@@ -126,7 +126,7 @@ export default function EpisodePlayer() {
               <p className="text-muted-foreground">جاري تحميل الحلقات...</p>
             </div>
           ) : episodes && episodes.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {episodes.map((episode) => (
                 <button
                   key={episode.id}
@@ -141,7 +141,7 @@ export default function EpisodePlayer() {
                   }`}
                 >
                   {/* صورة الحلقة */}
-                  <div className="relative w-full bg-muted overflow-hidden rounded-lg" style={{ aspectRatio: '3 / 2' }}>
+                  <div className="relative w-full aspect-video bg-muted overflow-hidden rounded-lg">
                     {episode.thumbnailUrl ? (
                       <img
                         src={episode.thumbnailUrl}

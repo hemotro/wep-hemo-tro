@@ -76,12 +76,7 @@ export default function Live() {
           <div className="lg:col-span-3">
             {selectedChannelData ? (
               <div>
-                {/* اسم القناة */}
-                <div className="px-4 py-2 bg-muted/50 rounded-t-lg border border-b-0 border-border">
-                  <p className="text-sm font-semibold text-foreground">{selectedChannelData.nameAr}</p>
-                </div>
-
-                <div className="bg-black rounded-b-lg overflow-hidden mb-4">
+                <div className="bg-black rounded-lg overflow-hidden mb-4">
                   {selectedChannelData.streamType === "youtube" ? (
                     <div className="w-full aspect-video">
                       <iframe

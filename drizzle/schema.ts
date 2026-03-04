@@ -129,57 +129,7 @@ export const channels = mysqlTable("channels", {
 export type Channel = typeof channels.$inferSelect;
 export type InsertChannel = typeof channels.$inferInsert;
 
-/**
- * جدول صور الملف الشخصي (Avatar)
- */
-export const userAvatars = mysqlTable("userAvatars", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  avatarUrl: varchar("avatarUrl", { length: 500 }).notNull(),
-  avatarType: varchar("avatarType", { length: 50 }).notNull(), // cartoon_1, cartoon_2, etc
-  isActive: boolean("isActive").default(true),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
 
-export type UserAvatar = typeof userAvatars.$inferSelect;
-export type InsertUserAvatar = typeof userAvatars.$inferInsert;
-
-/**
- * جدول التنويهات والملاحظات
- */
-export const announcements = mysqlTable("announcements", {
-  id: int("id").autoincrement().primaryKey(),
-  title: varchar("title", { length: 255 }).notNull(),
-  titleAr: varchar("titleAr", { length: 255 }).notNull(),
-  content: text("content").notNull(),
-  contentAr: text("contentAr").notNull(),
-  type: mysqlEnum("type", ["info", "warning", "error", "success"]).default("info"),
-  isActive: boolean("isActive").default(true),
-  displayOrder: int("displayOrder").default(0),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
-
-export type Announcement = typeof announcements.$inferSelect;
-export type InsertAnnouncement = typeof announcements.$inferInsert;
-
-/**
- * جدول صور السلايدر (Hero Section)
- */
-export const heroSlides = mysqlTable("heroSlides", {
-  id: int("id").autoincrement().primaryKey(),
-  seriesId: int("seriesId").notNull(),
-  imageUrl: varchar("imageUrl", { length: 500 }).notNull(),
-  title: varchar("title", { length: 255 }).notNull(),
-  titleAr: varchar("titleAr", { length: 255 }).notNull(),
-  displayOrder: int("displayOrder").default(0),
-  isActive: boolean("isActive").default(true),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
-
-export type HeroSlide = typeof heroSlides.$inferSelect;
-export type InsertHeroSlide = typeof heroSlides.$inferInsert;
 
 /**
  * جدول تخزين الفيديوهات المرفوعة

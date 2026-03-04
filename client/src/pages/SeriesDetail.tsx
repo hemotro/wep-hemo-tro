@@ -1,55 +1,45 @@
 import { useState } from "react";
-import { useParams } from "wouter";
+import { Heart } from "lucide-react";
+import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { Play, Heart } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import EpisodeModal from "@/components/EpisodeModal";
 
-interface Episode {
-  id: number;
-  episodeNumber: number;
-  titleAr: string;
-  videoUrl: string;
-  thumbnailUrl: string | null;
-}
+function FavoriteButton({ seriesId }: { seriesId: number }) {
+  const { data: isFav } = trpc.favorites.isFavorite.useQuery({ seriesId });
+  const addFav = trpc.favorites.add.useMutation();
+  const removeFav = trpc.favorites.remove.useMutation();
 
-export default function SeriesDetail() {
-  const { seriesId } = useParams<{ seriesId: string }>();
-  const series_id = parseInt(seriesId || "0");
-
-  const { data: series, isLoading: seriesLoading } = trpc.series.getById.useQuery({ id: series_id });
-  const { data: episodes, isLoading: episodesLoading } = trpc.series.getEpisodes.useQuery({
-    seriesId: series_id,
-  });
-  const { data: user } = trpc.auth.me.useQuery();
-  const { data: favorites } = trpc.favorites.getAll.useQuery();
-
-  const addFavoriteMutation = trpc.favorites.add.useMutation();
-  const removeFavoriteMutation = trpc.favorites.remove.useMutation();
-
-  const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const isFavorite = favorites?.some((fav: any) => fav.seriesId === series_id);
-
-  const handleToggleFavorite = async () => {
-    if (!user) return;
-
-    if (isFavorite) {
-      await removeFavoriteMutation.mutateAsync({ seriesId: series_id });
-    } else {
-      await addFavoriteMutation.mutateAsync({ seriesId: series_id });
+  const handleToggle = async () => {
+    try {
+      if (isFav) {
+        await removeFav.mutateAsync({ seriesId });
+      } else {
+        await addFav.mutateAsync({ seriesId });
+      }
+    } catch (error) {
+      console.error("خطأ في تحديث المفضلة:", error);
     }
   };
 
-  const handleEpisodeClick = (episode: Episode) => {
-    setSelectedEpisode(episode);
-    setIsModalOpen(true);
-  };
+  return (
+    <button
+      onClick={handleToggle}
+      className={`p-2 rounded-full transition-colors ${
+        isFav ? "bg-red-500 text-white" : "bg-muted text-muted-foreground hover:bg-red-500 hover:text-white"
+      }`}
+    >
+      <Heart size={24} fill={isFav ? "currentColor" : "none"} />
+    </button>
+  );
+}
 
-  const handleEpisodeChange = (episode: Episode) => {
-    setSelectedEpisode(episode);
-  };
+export default function SeriesDetail() {
+  const { id } = useParams<{ id: string }>();
+  const [, setLocation] = useLocation();
+  const seriesId = parseInt(id || "0");
+
+  const { data: series, isLoading: seriesLoading } = trpc.series.getById.useQuery({ id: seriesId });
+  const { data: episodes, isLoading: episodesLoading } = trpc.series.getEpisodes.useQuery({ seriesId });
+  const { data: images = [] } = trpc.seriesImages.getAll.useQuery({ seriesId });
 
   if (seriesLoading) {
     return (
@@ -70,129 +60,103 @@ export default function SeriesDetail() {
     );
   }
 
+  // الحصول على صورة البانر من قاعدة البيانات
+  const bannerImage = images.find(img => img.imageType === "banner" && img.isDefault);
+  const bannerUrl = bannerImage?.imageUrl || series.posterUrl;
+
   return (
     <div className="flex-1 pb-20 bg-background">
-      {/* غلاف المسلسل */}
-      <div className="w-full bg-gradient-to-b from-primary/20 to-background">
-        <div className="w-full max-w-7xl mx-auto px-4 py-8">
-          <div className="flex gap-6 items-start">
-            {/* صورة المسلسل */}
-            <div className="w-32 h-48 flex-shrink-0 rounded-lg overflow-hidden bg-muted">
-              {series.posterUrl ? (
-                <img
-                  src={series.posterUrl}
-                  alt={series.titleAr}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                  <span className="text-4xl font-bold text-muted-foreground">
-                    {series.titleAr.charAt(0)}
-                  </span>
-                </div>
-              )}
-            </div>
+      {/* البانر */}
+      {bannerUrl && (
+        <div className="relative w-full bg-black">
+          <img
+            src={bannerUrl}
+            alt={series.titleAr}
+            className="w-full h-48 sm:h-64 md:h-80 lg:h-96 object-cover"
+          />
+          {/* تدرج لوني */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent"></div>
+        </div>
+      )}
 
-            {/* معلومات المسلسل */}
+      {/* معلومات المسلسل */}
+      <div className="w-full max-w-7xl mx-auto px-4">
+        <div className="py-8 border-b border-border">
+          <div className="flex items-start justify-between gap-4 mb-4">
             <div className="flex-1">
-              <h1 className="text-4xl font-bold text-foreground mb-2">{series.titleAr}</h1>
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-sm bg-primary/20 text-primary px-3 py-1 rounded-full">
-                  {series.genre}
-                </span>
-
-              </div>
-
-              {series.descriptionAr && (
-                <p className="text-sm text-muted-foreground leading-relaxed mb-6 line-clamp-3">
-                  {series.descriptionAr}
-                </p>
-              )}
-
-              {/* أزرار الإجراءات */}
-              <div className="flex gap-3">
-                <Button
-                  onClick={handleToggleFavorite}
-                  variant={isFavorite ? "default" : "outline"}
-                  className="flex items-center gap-2"
-                >
-                  <Heart className={`w-4 h-4 ${isFavorite ? "fill-current" : ""}`} />
-                  {isFavorite ? "مفضل" : "إضافة للمفضلة"}
-                </Button>
-              </div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">{series.titleAr}</h1>
+              <p className="text-primary text-sm mb-4">{series.genre}</p>
             </div>
+            <FavoriteButton seriesId={seriesId} />
           </div>
+          
+          {/* الوصف */}
+          {series.descriptionAr && (
+            <p className="text-sm text-muted-foreground leading-relaxed">{series.descriptionAr}</p>
+          )}
+        </div>
+
+        {/* قائمة الحلقات */}
+        <div className="py-8">
+          <h2 className="text-2xl font-bold text-foreground mb-6">الحلقات</h2>
+          
+          {episodesLoading ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">جاري تحميل الحلقات...</p>
+            </div>
+          ) : episodes && episodes.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {episodes.map((episode) => (
+                <button
+                  key={episode.id}
+                  onClick={() => {
+                    setLocation(`/episode/${seriesId}/${episode.episodeNumber}`);
+                    window.scrollTo(0, 0);
+                  }}
+                  className="group relative overflow-hidden rounded-lg transition-all duration-300 hover:ring-2 hover:ring-primary/50 active:scale-95"
+                >
+                  {/* صورة الحلقة */}
+                  <div className="relative w-full aspect-video bg-muted overflow-hidden rounded-lg">
+                    {episode.thumbnailUrl ? (
+                      <img
+                        src={episode.thumbnailUrl}
+                        alt={`الحلقة ${episode.episodeNumber}`}
+                        className="w-full h-full object-cover group-hover:brightness-75 transition-all duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                        <span className="text-2xl font-bold text-muted-foreground">
+                          {episode.episodeNumber}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* overlay عند التمرير */}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                      <div className="bg-primary/90 p-2.5 rounded-full">
+                        <svg
+                          className="w-5 h-5 text-white fill-white"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* معلومات الحلقة */}
+                  <div className="mt-3">
+                    <p className="font-semibold text-foreground text-sm">الحلقة {episode.episodeNumber}</p>
+                    <p className="text-xs text-muted-foreground truncate mt-1">{episode.titleAr}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground py-12">لا توجد حلقات</p>
+          )}
         </div>
       </div>
-
-      {/* قائمة الحلقات */}
-      <div className="w-full max-w-7xl mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold text-foreground mb-6">الحلقات</h2>
-
-        {episodesLoading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">جاري تحميل الحلقات...</p>
-          </div>
-        ) : episodes && episodes.length > 0 ? (
-          <div className="space-y-3">
-            {episodes.map((episode) => (
-              <button
-                key={episode.id}
-                onClick={() => handleEpisodeClick(episode)}
-                className="w-full group flex gap-4 p-3 rounded-lg border border-border hover:border-primary/50 hover:bg-muted/50 transition-all duration-300 text-left"
-              >
-                {/* صورة الحلقة */}
-                <div className="w-24 h-14 flex-shrink-0 rounded overflow-hidden bg-muted">
-                  {episode.thumbnailUrl ? (
-                    <img
-                      src={episode.thumbnailUrl}
-                      alt={`الحلقة ${episode.episodeNumber}`}
-                      className="w-full h-full object-cover group-hover:brightness-75 transition-all duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                      <span className="text-lg font-bold text-muted-foreground">
-                        {episode.episodeNumber}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* معلومات الحلقة */}
-                <div className="flex-1 flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-foreground">
-                      الحلقة {episode.episodeNumber}
-                    </p>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {episode.titleAr}
-                    </p>
-                  </div>
-
-                  {/* زر التشغيل */}
-                  <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="bg-primary/90 p-2 rounded-full">
-                      <Play className="w-4 h-4 text-white fill-white" />
-                    </div>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-muted-foreground py-12">لا توجد حلقات</p>
-        )}
-      </div>
-
-      {/* Modal الحلقة */}
-      <EpisodeModal
-        isOpen={isModalOpen}
-        episode={selectedEpisode}
-        series={series}
-        episodes={episodes || []}
-        onClose={() => setIsModalOpen(false)}
-        onEpisodeChange={handleEpisodeChange}
-      />
     </div>
   );
 }
