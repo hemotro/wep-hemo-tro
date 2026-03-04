@@ -3,6 +3,7 @@
  * يعرض شعار hemo tro في الأعلى مع خلفية شفافة بالكامل
  */
 import { useState, useEffect } from "react";
+import { Link } from "wouter";
 
 export default function AppHeader() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -25,11 +26,15 @@ export default function AppHeader() {
       }`}
     >
       <div className="flex items-center justify-end h-16 px-6">
-        <img
-          src="/logo.png"
-          alt="hemo tro"
-          className="h-10 w-auto object-contain"
-        />
+        <Link href="/">
+          <a className="hover:opacity-80 transition-opacity cursor-pointer">
+            <img
+              src="/logo.png"
+              alt="hemo tro"
+              className="h-10 w-auto object-contain"
+            />
+          </a>
+        </Link>
       </div>
     </header>
   );
