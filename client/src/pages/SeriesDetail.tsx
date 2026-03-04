@@ -105,7 +105,7 @@ export default function SeriesDetail() {
               <p className="text-muted-foreground">جاري تحميل الحلقات...</p>
             </div>
           ) : episodes && episodes.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {episodes.map((episode) => (
                 <button
                   key={episode.id}
@@ -116,7 +116,7 @@ export default function SeriesDetail() {
                   className="group relative overflow-hidden rounded-lg transition-all duration-300 hover:ring-2 hover:ring-primary/50 active:scale-95"
                 >
                   {/* صورة الحلقة */}
-                  <div className="relative w-full aspect-video bg-muted overflow-hidden rounded-lg">
+                  <div className="relative w-full bg-muted overflow-hidden rounded-lg" style={{ aspectRatio: '3 / 2' }}>
                     {episode.thumbnailUrl ? (
                       <img
                         src={episode.thumbnailUrl}
