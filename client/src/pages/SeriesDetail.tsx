@@ -43,7 +43,7 @@ export default function SeriesDetail() {
 
   if (seriesLoading) {
     return (
-      <div className="flex-1 pb-20 flex items-center justify-center">
+      <div className="flex-1 pb-20 flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">جاري التحميل...</p>
@@ -54,7 +54,7 @@ export default function SeriesDetail() {
 
   if (!series) {
     return (
-      <div className="flex-1 pb-20 flex items-center justify-center">
+      <div className="flex-1 pb-20 flex items-center justify-center min-h-screen">
         <p className="text-muted-foreground">المسلسل غير موجود</p>
       </div>
     );
@@ -65,7 +65,7 @@ export default function SeriesDetail() {
   const bannerUrl = bannerImage?.imageUrl || series.posterUrl;
 
   return (
-    <div className="flex-1 pb-20">
+    <div className="flex-1 pb-20 bg-background">
       {/* البانر */}
       {bannerUrl && (
         <div className="relative w-full bg-black">
@@ -80,78 +80,82 @@ export default function SeriesDetail() {
       )}
 
       {/* معلومات المسلسل */}
-      <div className="px-4 py-4 border-b border-border">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-foreground mb-2">{series.titleAr}</h1>
-            <p className="text-primary text-sm mb-2">{series.genre}</p>
+      <div className="w-full max-w-7xl mx-auto px-4">
+        <div className="py-8 border-b border-border">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-foreground mb-2">{series.titleAr}</h1>
+              <p className="text-primary text-sm mb-4">{series.genre}</p>
+            </div>
+            <FavoriteButton seriesId={seriesId} />
           </div>
-          <FavoriteButton seriesId={seriesId} />
-        </div>
-        
-        {/* الوصف */}
-        {series.descriptionAr && (
-          <div className="mt-4 pt-4 border-t border-border">
+          
+          {/* الوصف */}
+          {series.descriptionAr && (
             <p className="text-sm text-muted-foreground leading-relaxed">{series.descriptionAr}</p>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
-      {/* قائمة الحلقات بشبكة احترافية */}
-      <div className="px-4 py-6">
-        <h2 className="text-xl font-bold text-foreground mb-4">الحلقات</h2>
-        {episodesLoading ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">جاري تحميل الحلقات...</p>
-          </div>
-        ) : episodes && episodes.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {episodes.map((episode) => (
-              <button
-                key={episode.id}
-                onClick={() => setLocation(`/episode/${seriesId}/${episode.episodeNumber}`)}
-                className="group relative overflow-hidden rounded-lg transition-transform hover:scale-105 active:scale-95"
-              >
-                {/* صورة الحلقة الكبيرة */}
-                <div className="relative w-full aspect-video bg-muted overflow-hidden rounded-lg">
-                  {episode.thumbnailUrl ? (
-                    <img
-                      src={episode.thumbnailUrl}
-                      alt={`الحلقة ${episode.episodeNumber}`}
-                      className="w-full h-full object-cover group-hover:brightness-75 transition-all duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                      <span className="text-3xl font-bold text-muted-foreground">
-                        {episode.episodeNumber}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* overlay عند التمرير */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <div className="bg-primary/90 p-3 rounded-full">
-                      <svg
-                        className="w-6 h-6 text-white fill-white"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
+        {/* قائمة الحلقات */}
+        <div className="py-8">
+          <h2 className="text-2xl font-bold text-foreground mb-6">الحلقات</h2>
+          
+          {episodesLoading ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">جاري تحميل الحلقات...</p>
+            </div>
+          ) : episodes && episodes.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {episodes.map((episode) => (
+                <button
+                  key={episode.id}
+                  onClick={() => {
+                    setLocation(`/episode/${seriesId}/${episode.episodeNumber}`);
+                    window.scrollTo(0, 0);
+                  }}
+                  className="group relative overflow-hidden rounded-lg transition-all duration-300 hover:ring-2 hover:ring-primary/50 active:scale-95"
+                >
+                  {/* صورة الحلقة */}
+                  <div className="relative w-full aspect-video bg-muted overflow-hidden rounded-lg">
+                    {episode.thumbnailUrl ? (
+                      <img
+                        src={episode.thumbnailUrl}
+                        alt={`الحلقة ${episode.episodeNumber}`}
+                        className="w-full h-full object-cover group-hover:brightness-75 transition-all duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                        <span className="text-2xl font-bold text-muted-foreground">
+                          {episode.episodeNumber}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* overlay عند التمرير */}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                      <div className="bg-primary/90 p-2.5 rounded-full">
+                        <svg
+                          className="w-5 h-5 text-white fill-white"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* معلومات الحلقة */}
-                <div className="mt-2">
-                  <p className="font-semibold text-foreground text-sm">الحلقة {episode.episodeNumber}</p>
-                  <p className="text-xs text-muted-foreground truncate">{episode.titleAr}</p>
-                </div>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-muted-foreground py-8">لا توجد حلقات</p>
-        )}
+                  {/* معلومات الحلقة */}
+                  <div className="mt-3">
+                    <p className="font-semibold text-foreground text-sm">الحلقة {episode.episodeNumber}</p>
+                    <p className="text-xs text-muted-foreground truncate mt-1">{episode.titleAr}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground py-12">لا توجد حلقات</p>
+          )}
+        </div>
       </div>
     </div>
   );
