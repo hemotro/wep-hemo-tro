@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Heart } from "lucide-react";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
-import VideoPlayer from "@/components/VideoPlayer";
 
 function FavoriteButton({ seriesId }: { seriesId: number }) {
   const { data: isFav } = trpc.favorites.isFavorite.useQuery({ seriesId });
@@ -35,8 +34,8 @@ function FavoriteButton({ seriesId }: { seriesId: number }) {
 
 export default function SeriesDetail() {
   const { id } = useParams<{ id: string }>();
+  const [, setLocation] = useLocation();
   const seriesId = parseInt(id || "0");
-  const [selectedEpisode, setSelectedEpisode] = useState<number>(1);
 
   const { data: series, isLoading: seriesLoading } = trpc.series.getById.useQuery({ id: seriesId });
   const { data: episodes, isLoading: episodesLoading } = trpc.series.getEpisodes.useQuery({ seriesId });
@@ -61,50 +60,13 @@ export default function SeriesDetail() {
     );
   }
 
-  const currentEpisode = episodes?.find(ep => ep.episodeNumber === selectedEpisode);
-  
   // الحصول على صورة البانر من قاعدة البيانات
   const bannerImage = images.find(img => img.imageType === "banner" && img.isDefault);
   const bannerUrl = bannerImage?.imageUrl || series.posterUrl;
 
-  // تحديث مشغل الفيديو بناءً على نوع الفيديو
-  const renderVideoPlayer = (episode: any) => {
-    if (!episode.videoUrl) return null;
-    
-    // إذا كان رابط YouTube
-    if (episode.videoUrl.includes("youtube.com") || episode.videoUrl.includes("youtu.be")) {
-      const videoId = episode.videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/live\/)([^&\n?#]+)/)?.[ 1];
-      if (videoId) {
-        return (
-          <div className="w-full aspect-video bg-black">
-            <iframe
-              width="100%"
-              height="100%"
-              src={`https://www.youtube.com/embed/${videoId}`}
-              title={`${series.titleAr} - الحلقة ${episode.episodeNumber}`}
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="w-full h-full"
-            ></iframe>
-          </div>
-        );
-      }
-    }
-    
-    // باقي الروابط (MP4, M3U8, إلخ.)
-    return (
-      <VideoPlayer
-        src={episode.videoUrl}
-        title={`${series.titleAr} - الحلقة ${episode.episodeNumber}`}
-        poster={episode.thumbnailUrl}
-      />
-    );
-  };
-
   return (
     <div className="flex-1 pb-20">
-      {/* البانر - تصميم بسيط وسهل */}
+      {/* البانر */}
       {bannerUrl && (
         <div className="relative w-full bg-black">
           <img
@@ -117,13 +79,6 @@ export default function SeriesDetail() {
         </div>
       )}
 
-      {/* مشغل الفيديو الحالي */}
-      {currentEpisode && (
-        <div className="w-full bg-black">
-          {renderVideoPlayer(currentEpisode)}
-        </div>
-      )}
-
       {/* معلومات المسلسل */}
       <div className="px-4 py-4 border-b border-border">
         <div className="flex items-start justify-between mb-3">
@@ -133,12 +88,6 @@ export default function SeriesDetail() {
           </div>
           <FavoriteButton seriesId={seriesId} />
         </div>
-        {currentEpisode && (
-          <div>
-            <p className="text-foreground font-semibold">الحلقة {currentEpisode.episodeNumber}</p>
-            <p className="text-muted-foreground text-sm">من {series.totalEpisodes} حلقة</p>
-          </div>
-        )}
         
         {/* الوصف */}
         {series.descriptionAr && (
@@ -148,7 +97,7 @@ export default function SeriesDetail() {
         )}
       </div>
 
-      {/* قائمة الحلقات */}
+      {/* قائمة الحلقات بشبكة احترافية */}
       <div className="px-4 py-6">
         <h2 className="text-xl font-bold text-foreground mb-4">الحلقات</h2>
         {episodesLoading ? (
@@ -156,33 +105,46 @@ export default function SeriesDetail() {
             <p className="text-muted-foreground">جاري تحميل الحلقات...</p>
           </div>
         ) : episodes && episodes.length > 0 ? (
-          <div className="space-y-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {episodes.map((episode) => (
               <button
                 key={episode.id}
-                onClick={() => setSelectedEpisode(episode.episodeNumber)}
-                className={`w-full p-3 rounded-lg border transition-all text-left flex items-center gap-3 ${
-                  selectedEpisode === episode.episodeNumber
-                    ? "border-primary bg-primary/10"
-                    : "border-border hover:border-primary/50"
-                }`}
+                onClick={() => setLocation(`/episode/${seriesId}/${episode.episodeNumber}`)}
+                className="group relative overflow-hidden rounded-lg transition-transform hover:scale-105 active:scale-95"
               >
-                {/* صورة مصغرة للحلقة */}
-                {episode.thumbnailUrl ? (
-                  <img
-                    src={episode.thumbnailUrl}
-                    alt={`الحلقة ${episode.episodeNumber}`}
-                    className="w-16 h-12 object-cover rounded"
-                  />
-                ) : (
-                  <div className="w-16 h-12 bg-muted rounded flex items-center justify-center text-sm font-semibold text-muted-foreground">
-                    {episode.episodeNumber}
+                {/* صورة الحلقة الكبيرة */}
+                <div className="relative w-full aspect-video bg-muted overflow-hidden rounded-lg">
+                  {episode.thumbnailUrl ? (
+                    <img
+                      src={episode.thumbnailUrl}
+                      alt={`الحلقة ${episode.episodeNumber}`}
+                      className="w-full h-full object-cover group-hover:brightness-75 transition-all duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                      <span className="text-3xl font-bold text-muted-foreground">
+                        {episode.episodeNumber}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* overlay عند التمرير */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <div className="bg-primary/90 p-3 rounded-full">
+                      <svg
+                        className="w-6 h-6 text-white fill-white"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
                   </div>
-                )}
-                
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-foreground">الحلقة {episode.episodeNumber}</p>
-                  <p className="text-sm text-muted-foreground truncate">{episode.titleAr}</p>
+                </div>
+
+                {/* معلومات الحلقة */}
+                <div className="mt-2">
+                  <p className="font-semibold text-foreground text-sm">الحلقة {episode.episodeNumber}</p>
+                  <p className="text-xs text-muted-foreground truncate">{episode.titleAr}</p>
                 </div>
               </button>
             ))}
