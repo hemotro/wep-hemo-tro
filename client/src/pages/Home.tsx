@@ -82,7 +82,7 @@ export default function Home() {
                   <a>
                     <Button className="w-full md:w-64 bg-primary hover:bg-primary/90 text-primary-foreground text-base py-3">
                       <Play className="w-5 h-5 mr-2" />
-                      شاهد الآن
+                      شاهالآن
                     </Button>
                   </a>
                 </Link>
