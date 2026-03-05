@@ -141,7 +141,7 @@ export default function Home() {
                         <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors flex items-end justify-center pb-3 opacity-0 group-hover:opacity-100">
                           <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">
                             <Play className="w-3 h-3 mr-1" />
-                            شاهد
+                            هjjjد
                           </Button>
                         </div>
                       </>
