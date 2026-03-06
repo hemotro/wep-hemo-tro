@@ -84,7 +84,7 @@ export default function Home() {
             onTouchEnd={handleTouchEnd}
           >
             {/* الصورة الكبيرة بدون غلاف */}
-            <div className="relative w-full h-80 md:h-[500px] lg:h-[600px] overflow-hidden bg-gradient-to-br from-primary/20 to-background">
+            <div className="relative w-full h-96 sm:h-[450px] md:h-[500px] lg:h-[600px] overflow-hidden bg-gradient-to-br from-primary/20 to-background">
               {currentBanner && (
                 <>
                   <img
@@ -96,12 +96,14 @@ export default function Home() {
                 </>
               )}
 
-              {/* الشعار فقط - شفاف فوق الصورة */}
+              {/* الشعار الجديد - شفاف فوق الصورة */}
               <Link href="/">
-                <a className="absolute top-4 md:top-6 right-4 md:right-6 z-20 flex items-center gap-2 hover:opacity-80 transition-opacity">
-                  <div className="w-10 h-10 md:w-12 md:h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors">
-                    <span className="text-primary font-bold text-base md:text-lg">HT</span>
-                  </div>
+                <a className="absolute top-3 md:top-6 right-3 md:right-6 z-20 hover:opacity-80 transition-opacity">
+                  <img
+                    src="/logo-new.png"
+                    alt="hemo tro"
+                    className="h-16 sm:h-20 md:h-24 w-auto object-contain drop-shadow-lg"
+                  />
                 </a>
               </Link>
 
