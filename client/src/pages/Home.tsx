@@ -96,18 +96,18 @@ export default function Home() {
                 </>
               )}
 
-              {/* الشعار والقائمة العلوية */}
-              <div className="absolute top-0 left-0 right-0 z-20 px-4 md:px-8 py-4 flex items-center justify-between bg-gradient-to-b from-black/60 to-transparent">
+              {/* الشعار والقائمة العلوية - بدون خلفية سوداء */}
+              <div className="absolute top-0 left-0 right-0 z-20 px-4 md:px-8 py-4 flex items-center justify-between">
                 {/* الشعار */}
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 md:w-10 md:h-10 bg-primary rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-sm md:text-base">HT</span>
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
+                    <span className="text-primary font-bold text-base md:text-lg">HT</span>
                   </div>
-                  <span className="text-white font-bold text-lg md:text-xl">hemo tro</span>
+                  <span className="text-white font-bold text-xl md:text-2xl drop-shadow-lg">hemo tro</span>
                 </div>
 
                 {/* قائمة التنقل */}
-                <div className="hidden md:flex items-center gap-6 text-white text-sm">
+                <div className="hidden md:flex items-center gap-6 text-white text-sm drop-shadow-lg">
                   <button className="hover:text-primary transition-colors">مسلسلات</button>
                   <button className="hover:text-primary transition-colors">أفلام</button>
                   <button className="hover:text-primary transition-colors">رياضة</button>
