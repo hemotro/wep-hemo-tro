@@ -2,13 +2,16 @@ import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { Play, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Play } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 
 export default function Home() {
   const { data: seriesList, isLoading } = trpc.series.list.useQuery();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!autoPlay || !seriesList || seriesList.length === 0) return;
@@ -19,6 +22,30 @@ export default function Home() {
 
     return () => clearInterval(interval);
   }, [autoPlay, seriesList]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+    setAutoPlay(false);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    setTouchEnd(e.changedTouches[0].clientX);
+    handleSwipe();
+  };
+
+  const handleSwipe = () => {
+    if (!seriesList || seriesList.length === 0) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe) {
+      setCurrentSlide((prev) => (prev + 1) % seriesList.length);
+    } else if (isRightSwipe) {
+      setCurrentSlide((prev) => (prev - 1 + seriesList.length) % seriesList.length);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -45,65 +72,46 @@ export default function Home() {
   const currentSeries = seriesList[currentSlide];
   const currentBanner = currentSeries?.posterUrl;
 
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % seriesList.length);
-    setAutoPlay(false);
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + seriesList.length) % seriesList.length);
-    setAutoPlay(false);
-  };
-
   return (
     <div className="flex-1 pb-20">
       {/* Carousel في الأعلى */}
       <div className="relative w-full">
         {currentSeries && (
-          <div className="relative">
-            {/* الصورة الكبيرة */}
+          <div
+            ref={carouselRef}
+            className="relative"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            {/* الصورة الكبيرة بدون غلاف */}
             <div className="relative w-full h-80 md:h-[500px] lg:h-[600px] overflow-hidden bg-gradient-to-br from-primary/20 to-background">
               {currentBanner && (
                 <>
                   <img
                     src={currentBanner}
                     alt={currentSeries.titleAr}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-opacity duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
                 </>
               )}
 
-              {/* معلومات المسلسل */}
-              <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 bg-gradient-to-t from-black via-black/50 to-transparent">
+              {/* معلومات المسلسل - تظهر عند التمرير للأسفل */}
+              <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 bg-gradient-to-t from-black via-black/50 to-transparent translate-y-0 transition-transform duration-300">
                 <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">{currentSeries.titleAr}</h2>
                 <p className="text-primary text-base md:text-lg mb-4">{currentSeries.genre}</p>
                 <Link href={`/series/${currentSeries.id}`}>
                   <a>
                     <Button className="w-full md:w-64 bg-primary hover:bg-primary/90 text-primary-foreground text-base py-3">
                       <Play className="w-5 h-5 mr-2" />
-                      شاهدالآن
+                      شاهد الآن
                     </Button>
                   </a>
                 </Link>
               </div>
 
-              {/* أزرار التنقل */}
-              <button
-                onClick={prevSlide}
-                className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors z-10"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
-              <button
-                onClick={nextSlide}
-                className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors z-10"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-
-              {/* مؤشرات الشرائح */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+              {/* مؤشرات الشرائح - بدون أزرار تنقل */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
                 {seriesList.map((_, index) => (
                   <button
                     key={index}
@@ -112,8 +120,9 @@ export default function Home() {
                       setAutoPlay(false);
                     }}
                     className={`w-2 h-2 rounded-full transition-all ${
-                      index === currentSlide ? "bg-primary w-6" : "bg-white/50"
+                      index === currentSlide ? "bg-primary w-6" : "bg-white/50 hover:bg-white/70"
                     }`}
+                    aria-label={`انتقل إلى الشريحة ${index + 1}`}
                   />
                 ))}
               </div>
@@ -141,7 +150,7 @@ export default function Home() {
                         <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors flex items-end justify-center pb-3 opacity-0 group-hover:opacity-100">
                           <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">
                             <Play className="w-3 h-3 mr-1" />
-                            هjjjد
+                            شاهد
                           </Button>
                         </div>
                       </>
