@@ -11,7 +11,23 @@ export default function Home() {
   const [autoPlay, setAutoPlay] = useState(true);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [scrollY, setScrollY] = useState(0);
+  const [showSmallHeader, setShowSmallHeader] = useState(false);
   const carouselRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
+
+  // معالج التمرير للـ Parallax و Header الذكي
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPos = window.scrollY;
+      setScrollY(scrollPos);
+      // إظهار Header الصغير عند التمرير 200px
+      setShowSmallHeader(scrollPos > 200);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     if (!autoPlay || !seriesList || seriesList.length === 0) return;
@@ -72,79 +88,119 @@ export default function Home() {
   const currentSeries = seriesList[currentSlide];
   const currentBanner = currentSeries?.posterUrl;
 
+  // حساب Parallax offset
+  const parallaxOffset = scrollY * 0.5;
+
   return (
     <div className="flex-1 pb-20">
-      {/* Carousel في الأعلى */}
-      <div className="relative w-full">
+      {/* Header الذكي - يظهر عند التمرير */}
+      <header
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+          showSmallHeader
+            ? "bg-background/80 backdrop-blur-md border-b border-border/30 py-2"
+            : "bg-transparent border-b border-transparent py-3"
+        }`}
+      >
+        <div className="flex items-center justify-end px-4 md:px-6">
+          <Link href="/">
+            <a className="hover:opacity-80 transition-opacity">
+              <img
+                src="/logo-new.png"
+                alt="hemo tro"
+                className={`w-auto object-contain drop-shadow-lg transition-all duration-300 ${
+                  showSmallHeader ? "h-8" : "h-0 opacity-0"
+                }`}
+              />
+            </a>
+          </Link>
+        </div>
+      </header>
+
+      {/* Hero Section - 70vh */}
+      <div className="relative w-full h-screen md:h-[70vh] overflow-hidden bg-gradient-to-br from-primary/20 to-background">
         {currentSeries && (
           <div
             ref={carouselRef}
-            className="relative"
+            className="relative w-full h-full"
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
-            {/* الصورة الكبيرة بدون غلاف */}
-            <div className="relative w-full h-96 sm:h-[450px] md:h-[500px] lg:h-[600px] overflow-hidden bg-gradient-to-br from-primary/20 to-background">
-              {currentBanner && (
-                <>
-                  <img
-                    src={currentBanner}
-                    alt={currentSeries.titleAr}
-                    className="w-full h-full object-cover transition-opacity duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
-                </>
-              )}
+            {/* الصورة مع Parallax Effect */}
+            {currentBanner && (
+              <>
+                <img
+                  src={currentBanner}
+                  alt={currentSeries.titleAr}
+                  className="w-full h-full object-cover"
+                  style={{
+                    transform: `translateY(${parallaxOffset}px)`,
+                    transition: "transform 0.1s ease-out",
+                  }}
+                />
+                {/* Gradient أسود خفيف في الأعلى */}
+                <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/40 via-black/20 to-transparent"></div>
+              </>
+            )}
 
-              {/* الشعار الجديد - شفاف فوق الصورة */}
-              <Link href="/">
-                <a className="absolute top-3 md:top-6 right-3 md:right-6 z-20 hover:opacity-80 transition-opacity">
-                  <img
-                    src="/logo-new.png"
-                    alt="hemo tro"
-                    className="h-16 sm:h-20 md:h-24 w-auto object-contain drop-shadow-lg"
-                  />
-                </a>
-              </Link>
+            {/* Gradient أسود قوي في الأسفل */}
+            <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
 
-              {/* معلومات المسلسل - تظهر عند التمرير للأسفل */}
-              <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 bg-gradient-to-t from-black via-black/50 to-transparent translate-y-0 transition-transform duration-300">
-                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">{currentSeries.titleAr}</h2>
-                <p className="text-primary text-base md:text-lg mb-4">{currentSeries.genre}</p>
+            {/* الشعار الصغير في الأعلى اليمين */}
+            <Link href="/">
+              <a className="absolute top-4 md:top-6 right-4 md:right-6 z-30 hover:opacity-80 transition-opacity">
+                <img
+                  src="/logo-new.png"
+                  alt="hemo tro"
+                  className="h-8 sm:h-10 md:h-12 w-auto object-contain drop-shadow-lg"
+                />
+              </a>
+            </Link>
+
+            {/* معلومات المسلسل - في الأسفل */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8 lg:p-12">
+              <div className="max-w-2xl">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 drop-shadow-lg">
+                  {currentSeries.titleAr}
+                </h2>
+                <p className="text-primary text-sm sm:text-base md:text-lg mb-4 drop-shadow-lg">
+                  {currentSeries.genre}
+                </p>
                 <Link href={`/series/${currentSeries.id}`}>
                   <a>
-                    <Button className="w-full md:w-64 bg-primary hover:bg-primary/90 text-primary-foreground text-base py-3">
+                    <Button className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground text-base py-3 px-8 rounded-lg">
                       <Play className="w-5 h-5 mr-2" />
                       شاهد الآن
                     </Button>
                   </a>
                 </Link>
               </div>
+            </div>
 
-              {/* مؤشرات الشرائح - بدون أزرار تنقل */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-                {seriesList.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      setCurrentSlide(index);
-                      setAutoPlay(false);
-                    }}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      index === currentSlide ? "bg-primary w-6" : "bg-white/50 hover:bg-white/70"
-                    }`}
-                    aria-label={`انتقل إلى الشريحة ${index + 1}`}
-                  />
-                ))}
-              </div>
+            {/* مؤشرات الشرائح */}
+            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+              {seriesList.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setCurrentSlide(index);
+                    setAutoPlay(false);
+                  }}
+                  className={`rounded-full transition-all ${
+                    index === currentSlide
+                      ? "bg-primary w-6 h-2"
+                      : "bg-white/50 hover:bg-white/70 w-2 h-2"
+                  }`}
+                  aria-label={`انتقل إلى الشريحة ${index + 1}`}
+                />
+              ))}
             </div>
           </div>
         )}
       </div>
 
       {/* قائمة أفقية للمسلسلات */}
-      <div className="px-4 py-6">
-        <h3 className="text-lg font-bold text-foreground mb-4">جميع المسلسلات</h3>
+      <div className="px-4 py-6 md:py-8">
+        <h3 className="text-lg md:text-xl font-bold text-foreground mb-4">جميع المسلسلات</h3>
         <div className="overflow-x-auto pb-4">
           <div className="flex gap-4 min-w-min">
             {seriesList.map((series) => (
