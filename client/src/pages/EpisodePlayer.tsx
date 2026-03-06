@@ -58,9 +58,9 @@ export default function EpisodePlayer() {
       <div className="w-full bg-black">
         <div className="aspect-video">
           <VideoPlayer
-            src={currentEpisode.videoUrl}
+            videoUrl={currentEpisode.videoUrl}
             title={`${series.titleAr} - الحلقة ${currentEpisode.episodeNumber}: ${currentEpisode.titleAr}`}
-            poster={currentEpisode.thumbnailUrl || undefined}
+            episodeNumber={currentEpisode.episodeNumber.toString()}
           />
         </div>
       </div>

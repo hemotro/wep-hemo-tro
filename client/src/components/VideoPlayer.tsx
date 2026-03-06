@@ -1,446 +1,154 @@
-/**
- * مشغل فيديو احترافي مخصص لـ hemo tro
- * يدعم جميع تنسيقات الفيديو والجودات المتعددة
- */
-import { useRef, useState, useEffect } from "react";
-import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, AlertCircle, Settings } from "lucide-react";
-
-interface VideoQuality {
-  label: string;
-  url: string;
-}
+import { useEffect, useRef } from 'react';
 
 interface VideoPlayerProps {
-  src: string;
+  videoUrl: string;
+  isLive?: boolean;
   title?: string;
-  poster?: string;
-  onEnded?: () => void;
-  type?: 'video/mp4' | 'application/x-mpegURL' | 'application/dash+xml' | 'auto';
-  qualities?: VideoQuality[];
+  episodeNumber?: string;
 }
 
-export default function VideoPlayer({
-  src,
-  title = "الحلقة",
-  poster,
-  onEnded,
-  type = 'auto',
-  qualities = [],
-}: VideoPlayerProps) {
+export default function VideoPlayer({ videoUrl, isLive = false, title, episodeNumber }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const plyrRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(1);
-  const [playbackRate, setPlaybackRate] = useState(1);
-  const [showControls, setShowControls] = useState(true);
-  const [videoError, setVideoError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showQualityMenu, setShowQualityMenu] = useState(false);
-  const [currentQuality, setCurrentQuality] = useState(0);
-  const [currentSrc, setCurrentSrc] = useState(src);
-  const controlsTimeoutRef = useRef<any>(null);
-  const qualitiesRef = useRef<HTMLDivElement>(null);
 
-  // تحديد نوع الفيديو تلقائياً
-  const detectVideoType = (url: string): string => {
-    if (type !== 'auto') return type;
-    
-    const urlLower = url.toLowerCase();
-    if (urlLower.includes('.m3u8') || urlLower.includes('m3u8')) {
-      return 'application/x-mpegURL';
-    }
-    if (urlLower.includes('.mpd') || urlLower.includes('dash')) {
-      return 'application/dash+xml';
-    }
-    return 'video/mp4';
-  };
+  useEffect(() => {
+    // تحميل مكتبات Plyr و HLS من CDN
+    const loadScripts = async () => {
+      // تحميل Plyr CSS
+      if (!document.querySelector('link[href*="plyr.css"]')) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://cdn.plyr.io/3.7.8/plyr.css';
+        document.head.appendChild(link);
+      }
 
-  const videoType = detectVideoType(currentSrc);
-  const hasQualities = qualities && qualities.length > 0;
+      // تحميل Plyr JS
+      if (!window.Plyr) {
+        const script1 = document.createElement('script');
+        script1.src = 'https://cdn.plyr.io/3.7.8/plyr.polyfilled.js';
+        script1.async = true;
+        document.body.appendChild(script1);
 
-  // تشغيل/إيقاف الفيديو - فقط عند الضغط على الزر
-  const togglePlay = (e?: React.MouseEvent) => {
-    if (e) {
-      e.stopPropagation();
-    }
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play().catch(() => {
-          setVideoError('فشل تشغيل الفيديو');
+        await new Promise(resolve => {
+          script1.onload = resolve;
         });
       }
-      setIsPlaying(!isPlaying);
-    }
-  };
 
-  // منع التشغيل/الإيقاف عند الضغط على الفيديو
-  const handleVideoClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
+      // تحميل HLS.js
+      if (!window.Hls) {
+        const script2 = document.createElement('script');
+        script2.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
+        script2.async = true;
+        document.body.appendChild(script2);
 
-  // كتم الصوت
-  const toggleMute = (e?: React.MouseEvent) => {
-    if (e) {
-      e.stopPropagation();
-    }
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
-    }
-  };
-
-  // ملء الشاشة
-  const toggleFullscreen = async (e?: React.MouseEvent) => {
-    if (e) {
-      e.stopPropagation();
-    }
-    if (!containerRef.current) return;
-
-    try {
-      if (!isFullscreen) {
-        if (containerRef.current.requestFullscreen) {
-          await containerRef.current.requestFullscreen();
-        }
-        setIsFullscreen(true);
-      } else {
-        if (document.fullscreenElement) {
-          await document.exitFullscreen();
-        }
-        setIsFullscreen(false);
+        await new Promise(resolve => {
+          script2.onload = resolve;
+        });
       }
-    } catch (error) {
-      console.error("خطأ في ملء الشاشة:", error);
-    }
-  };
 
-  // تحديث الوقت الحالي
-  const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime);
-    }
-  };
-
-  // تحديث المدة الكلية
-  const handleLoadedMetadata = () => {
-    if (videoRef.current) {
-      setDuration(videoRef.current.duration);
-      setIsLoading(false);
-    }
-  };
-
-  // معالجة أخطاء الفيديو
-  const handleVideoError = () => {
-    setVideoError('فشل تحميل الفيديو. يرجى التحقق من رابط الفيديو.');
-    setIsLoading(false);
-  };
-
-  // تغيير الجودة
-  const handleQualityChange = (index: number) => {
-    if (qualities[index]) {
-      const currentTimeBackup = videoRef.current?.currentTime || 0;
-      const wasPlaying = isPlaying;
-      
-      setCurrentQuality(index);
-      setCurrentSrc(qualities[index].url);
-      setShowQualityMenu(false);
-      setIsLoading(true);
-
-      // استئناف التشغيل من نفس النقطة
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.currentTime = currentTimeBackup;
-          if (wasPlaying) {
-            videoRef.current.play().catch(() => {
-              setVideoError('فشل تشغيل الفيديو');
-            });
-          }
-        }
-      }, 500);
-    }
-  };
-
-  // تغيير الوقت
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const time = parseFloat(e.target.value);
-    setCurrentTime(time);
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-    }
-  };
-
-  // تغيير مستوى الصوت
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const vol = parseFloat(e.target.value);
-    setVolume(vol);
-    if (videoRef.current) {
-      videoRef.current.volume = vol;
-    }
-  };
-
-  // تغيير سرعة التشغيل
-  const handlePlaybackRateChange = (rate: number) => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = rate;
-      setPlaybackRate(rate);
-    }
-  };
-
-  // إخفاء التحكم بعد فترة من عدم الحركة
-  const handleMouseMove = () => {
-    setShowControls(true);
-    if (controlsTimeoutRef.current) {
-      clearTimeout(controlsTimeoutRef.current);
-    }
-    if (isPlaying) {
-      controlsTimeoutRef.current = setTimeout(() => {
-        setShowControls(false);
-      }, 3000);
-    }
-  };
-
-  // إغلاق قائمة الجودات عند الضغط خارجها
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (qualitiesRef.current && !qualitiesRef.current.contains(e.target as Node)) {
-        setShowQualityMenu(false);
+      // إعداد المشغل
+      if (videoRef.current && window.Plyr) {
+        setupPlayer();
       }
     };
 
-    if (showQualityMenu) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
-  }, [showQualityMenu]);
+    loadScripts();
 
-  // تنسيق الوقت
-  const formatTime = (seconds: number) => {
-    if (!seconds || isNaN(seconds)) return "0:00";
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, "0")}:${secs
-        .toString()
-        .padStart(2, "0")}`;
+    return () => {
+      if (plyrRef.current) {
+        plyrRef.current.destroy();
+      }
+    };
+  }, [videoUrl]);
+
+  const setupPlayer = () => {
+    if (!videoRef.current || !window.Plyr) return;
+
+    const isHls = videoUrl.endsWith('.m3u8');
+
+    if (isHls) {
+      // بث مباشر HLS
+      if (window.Hls && window.Hls.isSupported()) {
+        const hls = new window.Hls();
+        hls.loadSource(videoUrl);
+        hls.attachMedia(videoRef.current);
+      } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
+        videoRef.current.src = videoUrl;
+      } else {
+        videoRef.current.src = videoUrl;
+      }
+
+      // إعداد Plyr للبث المباشر (بدون شريط progress)
+      plyrRef.current = new window.Plyr(videoRef.current, {
+        controls: ['play', 'rewind', 'fast-forward', 'speed', 'fullscreen'],
+        rewind: 10,
+        fastForward: 10,
+        settings: ['speed'],
+        speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
+      });
+    } else {
+      // فيديو عادي MP4
+      videoRef.current.src = videoUrl;
+      videoRef.current.setAttribute('controls', 'true');
+
+      // إعداد Plyr للفيديو العادي (شريط كامل)
+      plyrRef.current = new window.Plyr(videoRef.current, {
+        controls: [
+          'play-large',
+          'play',
+          'rewind',
+          'fast-forward',
+          'progress',
+          'current-time',
+          'mute',
+          'volume',
+          'settings',
+          'speed',
+          'fullscreen',
+        ],
+        rewind: 10,
+        fastForward: 10,
+        settings: ['speed'],
+        speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
+      });
     }
-    return `${minutes}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // حساب نسبة التقدم
-  const progress = duration ? (currentTime / duration) * 100 : 0;
-
   return (
-    <div
-      ref={containerRef}
-      className="w-full bg-black rounded-lg overflow-hidden group relative"
-      onMouseMove={handleMouseMove}
-      onMouseLeave={() => {
-        if (isPlaying) setShowControls(false);
-      }}
-    >
-      {/* الفيديو */}
-      {videoError ? (
-        <div className="w-full aspect-video bg-black flex items-center justify-center">
-          <div className="text-center">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
-            <p className="text-red-500 mb-2">{videoError}</p>
-            <p className="text-muted-foreground text-xs break-all max-w-xs">{currentSrc}</p>
+    <div ref={containerRef} className="w-full bg-black rounded-lg overflow-hidden">
+      {/* عنوان الحلقة والمسلسل */}
+      {(title || episodeNumber) && (
+        <div className="bg-gray-900 px-4 py-2 text-sm text-gray-300 flex items-center justify-between">
+          <div>
+            {title && <span className="font-semibold">{title}</span>}
+            {episodeNumber && <span className="text-gray-400 mr-2">الحلقة {episodeNumber}</span>}
           </div>
-        </div>
-      ) : (
-        <>
-          <video
-            ref={videoRef}
-            poster={poster}
-            className="w-full h-auto"
-            onTimeUpdate={handleTimeUpdate}
-            onLoadedMetadata={handleLoadedMetadata}
-            onEnded={onEnded}
-            onClick={handleVideoClick}
-            onError={handleVideoError}
-            crossOrigin="anonymous"
-            controls={false}
-          >
-            {videoType === 'application/x-mpegURL' ? (
-              <source src={currentSrc} type="application/x-mpegURL" />
-            ) : videoType === 'application/dash+xml' ? (
-              <source src={currentSrc} type="application/dash+xml" />
-            ) : (
-              <source src={currentSrc} type="video/mp4" />
-            )}
-            متصفحك لا يدعم عنصر الفيديو.
-          </video>
-
-          {/* مؤشر التحميل */}
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          {isLive && (
+            <div className="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold">
+              LIVE
             </div>
           )}
-        </>
-      )}
-
-      {/* التحكم */}
-      {!videoError && (
-        <div
-          className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/50 to-transparent p-4 transition-opacity duration-300 ${
-            showControls ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          {/* شريط التقدم */}
-          <div className="mb-3">
-            <input
-              type="range"
-              min="0"
-              max={duration || 0}
-              value={currentTime}
-              onChange={handleSeek}
-              className="w-full h-1 bg-gray-700 rounded cursor-pointer appearance-none hover:h-2 transition-all"
-              style={{
-                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${progress}%, #374151 ${progress}%, #374151 100%)`,
-              }}
-            />
-          </div>
-
-          {/* أزرار التحكم */}
-          <div className="flex items-center justify-between">
-            {/* الأزرار اليسرى */}
-            <div className="flex items-center gap-2">
-              {/* زر التشغيل/الإيقاف */}
-              <button
-                onClick={togglePlay}
-                className="p-2 hover:bg-white/20 rounded transition-colors"
-                title={isPlaying ? "إيقاف" : "تشغيل"}
-              >
-                {isPlaying ? (
-                  <Pause className="w-5 h-5 text-white" />
-                ) : (
-                  <Play className="w-5 h-5 text-white" />
-                )}
-              </button>
-
-              {/* التحكم بالصوت */}
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={toggleMute}
-                  className="p-2 hover:bg-white/20 rounded transition-colors"
-                  title={isMuted ? "تفعيل الصوت" : "كتم الصوت"}
-                >
-                  {isMuted ? (
-                    <VolumeX className="w-5 h-5 text-white" />
-                  ) : (
-                    <Volume2 className="w-5 h-5 text-white" />
-                  )}
-                </button>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={volume}
-                  onChange={handleVolumeChange}
-                  className="w-20 h-1 bg-gray-700 rounded cursor-pointer appearance-none"
-                />
-              </div>
-
-              {/* الوقت */}
-              <span className="text-white text-sm ml-2">
-                {formatTime(currentTime)} / {formatTime(duration)}
-              </span>
-            </div>
-
-            {/* الأزرار اليمنى */}
-            <div className="flex items-center gap-2">
-              {/* قائمة الجودات */}
-              {hasQualities && (
-                <div className="relative" ref={qualitiesRef}>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowQualityMenu(!showQualityMenu);
-                    }}
-                    className="bg-gray-800 text-white text-sm px-2 py-1 rounded hover:bg-gray-700 transition-colors cursor-pointer flex items-center gap-1"
-                    title="الجودة"
-                  >
-                    <Settings className="w-4 h-4" />
-                    {qualities[currentQuality]?.label || "الجودة"}
-                  </button>
-
-                  {/* قائمة الجودات المنسدلة */}
-                  {showQualityMenu && (
-                    <div className="absolute bottom-full right-0 mb-2 bg-gray-900 rounded shadow-lg overflow-hidden z-50">
-                      {qualities.map((quality, index) => (
-                        <button
-                          key={index}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleQualityChange(index);
-                          }}
-                          className={`w-full px-4 py-2 text-sm text-left transition-colors ${
-                            currentQuality === index
-                              ? "bg-primary text-white"
-                              : "text-white hover:bg-gray-800"
-                          }`}
-                        >
-                          {quality.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* سرعة التشغيل */}
-              <select
-                value={playbackRate}
-                onChange={(e) => handlePlaybackRateChange(parseFloat(e.target.value))}
-                className="bg-gray-800 text-white text-sm px-2 py-1 rounded hover:bg-gray-700 transition-colors cursor-pointer"
-              >
-                <option value={0.5}>0.5x</option>
-                <option value={0.75}>0.75x</option>
-                <option value={1}>1x</option>
-                <option value={1.25}>1.25x</option>
-                <option value={1.5}>1.5x</option>
-                <option value={2}>2x</option>
-              </select>
-
-              {/* زر ملء الشاشة */}
-              <button
-                onClick={toggleFullscreen}
-                className="p-2 hover:bg-white/20 rounded transition-colors"
-                title={isFullscreen ? "خروج من ملء الشاشة" : "ملء الشاشة"}
-              >
-                {isFullscreen ? (
-                  <Minimize className="w-5 h-5 text-white" />
-                ) : (
-                  <Maximize className="w-5 h-5 text-white" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* عنوان الحلقة */}
-          {title && <p className="text-white text-sm mt-2">{title}</p>}
         </div>
       )}
 
-      {/* زر التشغيل الكبير في المنتصف */}
-      {!isPlaying && !videoError && (
-        <div
-          className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer hover:bg-black/40 transition-colors"
-          onClick={togglePlay}
-        >
-          <div className="bg-blue-600 hover:bg-blue-700 p-4 rounded-full transition-colors">
-            <Play className="w-12 h-12 text-white fill-white" />
-          </div>
-        </div>
-      )}
+      {/* المشغل */}
+      <div className="relative w-full" style={{ aspectRatio: '16 / 9' }}>
+        <video
+          ref={videoRef}
+          className="w-full h-full"
+          playsInline
+          crossOrigin="anonymous"
+        />
+      </div>
     </div>
   );
+}
+
+// تعريف أنواع النوافذ العامة
+declare global {
+  interface Window {
+    Plyr: any;
+    Hls: any;
+  }
 }

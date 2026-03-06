@@ -93,10 +93,9 @@ export default function Live() {
                   ) : (
                     <div className="w-full">
                       <VideoPlayer
-                        src={selectedChannelData.streamUrl}
+                        videoUrl={selectedChannelData.streamUrl}
                         title={selectedChannelData.nameAr}
-                        poster={selectedChannelData.logoUrl || undefined}
-                        type="application/x-mpegURL"
+                        isLive={true}
                       />
                     </div>
                   )}
