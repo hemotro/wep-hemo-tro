@@ -13,7 +13,7 @@ import EpisodePlayer from "./pages/EpisodePlayer";
 import Login from "./pages/Login";
 import Admin from "./pages/Admin";
 import BottomNav from "./components/BottomNav";
-import AppHeader from "./components/AppHeader";
+
 import { Notifications, useNotifications } from "./components/Notifications";
 
 function Router() {
@@ -44,7 +44,6 @@ function App() {
           <Toaster />
           <Notifications notifications={notifications} onRemove={removeNotification} />
           <div className="flex flex-col min-h-screen bg-background text-foreground">
-            <AppHeader />
             <main className="flex-1 flex flex-col">
               <Router />
             </main>

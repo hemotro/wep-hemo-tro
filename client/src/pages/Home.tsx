@@ -96,24 +96,14 @@ export default function Home() {
                 </>
               )}
 
-              {/* الشعار والقائمة العلوية - مباشرة على الصورة */}
-              <div className="absolute top-0 left-0 right-0 z-20 px-4 md:px-8 py-3 md:py-4 flex items-center justify-between">
-                {/* الشعار */}
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
+              {/* الشعار فقط - شفاف فوق الصورة */}
+              <Link href="/">
+                <a className="absolute top-4 md:top-6 right-4 md:right-6 z-20 flex items-center gap-2 hover:opacity-80 transition-opacity">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors">
                     <span className="text-primary font-bold text-base md:text-lg">HT</span>
                   </div>
-                  <span className="text-white font-bold text-xl md:text-2xl drop-shadow-lg">hemo tro</span>
-                </div>
-
-                {/* قائمة التنقل */}
-                <div className="hidden md:flex items-center gap-6 text-white text-sm drop-shadow-lg">
-                  <button className="hover:text-primary transition-colors">مسلسلات</button>
-                  <button className="hover:text-primary transition-colors">أفلام</button>
-                  <button className="hover:text-primary transition-colors">رياضة</button>
-                  <button className="hover:text-primary transition-colors">بث مباشر</button>
-                </div>
-              </div>
+                </a>
+              </Link>
 
               {/* معلومات المسلسل - تظهر عند التمرير للأسفل */}
               <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 bg-gradient-to-t from-black via-black/50 to-transparent translate-y-0 transition-transform duration-300">
