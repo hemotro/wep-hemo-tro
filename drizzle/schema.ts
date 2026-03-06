@@ -169,3 +169,36 @@ export const watchHistory = mysqlTable("watchHistory", {
 
 export type WatchHistory = typeof watchHistory.$inferSelect;
 export type InsertWatchHistory = typeof watchHistory.$inferInsert;
+
+
+/**
+ * جدول الأقسام الديناميكية (مثل: رمضان 2025، آخر التحميلات، إلخ)
+ */
+export const categories = mysqlTable("categories", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  titleAr: varchar("titleAr", { length: 255 }).notNull(),
+  description: text("description"),
+  descriptionAr: text("descriptionAr"),
+  icon: varchar("icon", { length: 500 }),
+  order: int("order").default(0),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Category = typeof categories.$inferSelect;
+export type InsertCategory = typeof categories.$inferInsert;
+
+/**
+ * جدول ربط المسلسلات بالأقسام (علاقة many-to-many)
+ */
+export const seriesCategories = mysqlTable("seriesCategories", {
+  id: int("id").autoincrement().primaryKey(),
+  seriesId: int("seriesId").notNull(),
+  categoryId: int("categoryId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SeriesCategory = typeof seriesCategories.$inferSelect;
+export type InsertSeriesCategory = typeof seriesCategories.$inferInsert;

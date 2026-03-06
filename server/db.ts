@@ -1,6 +1,6 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, InsertFavorite, seriesImages, InsertSeriesImage, channels, Channel, InsertChannel, uploadedVideos, watchHistory, InsertWatchHistory } from "../drizzle/schema";
+import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, InsertFavorite, seriesImages, InsertSeriesImage, channels, Channel, InsertChannel, uploadedVideos, watchHistory, InsertWatchHistory, categories, seriesCategories, Category, InsertCategory } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import bcrypt from "bcrypt";
 
@@ -524,6 +524,144 @@ export async function getUserSeriesWatchHistory(userId: number, seriesId: number
       eq(watchHistory.userId, userId),
       eq(watchHistory.seriesId, seriesId)
     )
+  );
+  
+  return result;
+}
+
+
+// ==================== الأقسام الديناميكية ====================
+
+export async function createCategory(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+  
+  const result = await db.insert(categories).values({
+    title: data.title,
+    titleAr: data.titleAr,
+    description: data.description,
+    descriptionAr: data.descriptionAr,
+    icon: data.icon,
+    order: data.order || 0,
+    isActive: data.isActive !== false,
+  });
+  
+  return result;
+}
+
+export async function getCategories() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db.select().from(categories).where(eq(categories.isActive, true)).orderBy(asc(categories.order));
+  return result;
+}
+
+export async function getCategoryById(categoryId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(categories).where(eq(categories.id, categoryId)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function updateCategory(categoryId: number, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+  
+  await db.update(categories).set({
+    title: data.title,
+    titleAr: data.titleAr,
+    description: data.description,
+    descriptionAr: data.descriptionAr,
+    icon: data.icon,
+    order: data.order,
+    isActive: data.isActive,
+  }).where(eq(categories.id, categoryId));
+  
+  return { success: true };
+}
+
+export async function deleteCategory(categoryId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+  
+  // حذف الربط بين المسلسلات والقسم
+  await db.delete(seriesCategories).where(eq(seriesCategories.categoryId, categoryId));
+  
+  // حذف القسم
+  await db.delete(categories).where(eq(categories.id, categoryId));
+  
+  return { success: true };
+}
+
+export async function addSeriesToCategory(seriesId: number, categoryId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+  
+  // التحقق من عدم وجود ربط مسبق
+  const existing = await db.select().from(seriesCategories).where(
+    and(
+      eq(seriesCategories.seriesId, seriesId),
+      eq(seriesCategories.categoryId, categoryId)
+    )
+  ).limit(1);
+  
+  if (existing.length > 0) {
+    return { success: true, message: "المسلسل مضاف بالفعل لهذا القسم" };
+  }
+  
+  await db.insert(seriesCategories).values({
+    seriesId,
+    categoryId,
+  });
+  
+  return { success: true };
+}
+
+export async function removeSeriesFromCategory(seriesId: number, categoryId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+  
+  await db.delete(seriesCategories).where(
+    and(
+      eq(seriesCategories.seriesId, seriesId),
+      eq(seriesCategories.categoryId, categoryId)
+    )
+  );
+  
+  return { success: true };
+}
+
+export async function getSeriesByCategory(categoryId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db.select({
+    series: series,
+    category: categories,
+  }).from(seriesCategories)
+    .innerJoin(series, eq(seriesCategories.seriesId, series.id))
+    .innerJoin(categories, eq(seriesCategories.categoryId, categories.id))
+    .where(eq(seriesCategories.categoryId, categoryId));
+  
+  return result.map(r => r.series);
+}
+
+export async function getCategoriesWithSeries() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const allCategories = await getCategories();
+  
+  const result = await Promise.all(
+    allCategories.map(async (category) => {
+      const categorySeries = await getSeriesByCategory(category.id);
+      return {
+        ...category,
+        series: categorySeries,
+      };
+    })
   );
   
   return result;

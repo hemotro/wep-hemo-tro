@@ -12,7 +12,9 @@ import {
   createChannel, getAllChannels, getChannelById, updateChannel, deleteChannel,
   updateSeriesPromo, getSeriesPromo,
   createUploadedVideo, getUploadedVideoByEpisodeId, updateEpisodeVideo, deleteUploadedVideo,
-  saveWatchHistory, getWatchHistory, getUserSeriesWatchHistory
+  saveWatchHistory, getWatchHistory, getUserSeriesWatchHistory,
+  createCategory, getCategories, getCategoryById, updateCategory, deleteCategory,
+  addSeriesToCategory, removeSeriesFromCategory, getSeriesByCategory, getCategoriesWithSeries
 } from "./db";
 import { storagePut } from "./storage";
 import { TRPCError } from "@trpc/server";
@@ -659,6 +661,121 @@ export const appRouter = router({
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
             message: error.message || "فشل جلب سجل المسلسل",
+          });
+        }
+      }),
+  }),
+
+  categories: router({
+    list: publicProcedure.query(async () => {
+      return await getCategories();
+    }),
+
+    listWithSeries: publicProcedure.query(async () => {
+      return await getCategoriesWithSeries();
+    }),
+
+    getById: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await getCategoryById(input.id);
+      }),
+
+    getSeriesByCategory: publicProcedure
+      .input(z.object({ categoryId: z.number() }))
+      .query(async ({ input }) => {
+        return await getSeriesByCategory(input.categoryId);
+      }),
+
+    create: adminProcedure
+      .input(z.object({
+        title: z.string(),
+        titleAr: z.string(),
+        description: z.string().optional(),
+        descriptionAr: z.string().optional(),
+        icon: z.string().optional(),
+        order: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          await createCategory(input);
+          return { success: true, message: "تم إنشاء القسم بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل إنشاء القسم",
+          });
+        }
+      }),
+
+    update: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        title: z.string().optional(),
+        titleAr: z.string().optional(),
+        description: z.string().optional(),
+        descriptionAr: z.string().optional(),
+        icon: z.string().optional(),
+        order: z.number().optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const { id, ...data } = input;
+          await updateCategory(id, data);
+          return { success: true, message: "تم تحديث القسم بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل تحديث القسم",
+          });
+        }
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        try {
+          await deleteCategory(input.id);
+          return { success: true, message: "تم حذف القسم بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل حذف القسم",
+          });
+        }
+      }),
+
+    addSeries: adminProcedure
+      .input(z.object({
+        seriesId: z.number(),
+        categoryId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          await addSeriesToCategory(input.seriesId, input.categoryId);
+          return { success: true, message: "تم إضافة المسلسل للقسم بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل إضافة المسلسل",
+          });
+        }
+      }),
+
+    removeSeries: adminProcedure
+      .input(z.object({
+        seriesId: z.number(),
+        categoryId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          await removeSeriesFromCategory(input.seriesId, input.categoryId);
+          return { success: true, message: "تم إزالة المسلسل من القسم بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل إزالة المسلسل",
           });
         }
       }),
