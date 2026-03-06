@@ -60,7 +60,7 @@ export default function EpisodePlayer() {
           <VideoPlayer
             videoUrl={currentEpisode.videoUrl}
             title={`${series.titleAr} - الحلقة ${currentEpisode.episodeNumber}: ${currentEpisode.titleAr}`}
-            episodeNumber={currentEpisode.episodeNumber.toString()}
+            episodeNumber={`${currentEpisode.episodeNumber}`}
           />
         </div>
       </div>

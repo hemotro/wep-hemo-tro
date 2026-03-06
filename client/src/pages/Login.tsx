@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, Lock, Chrome } from "lucide-react";
+import { Mail, Lock } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -61,9 +61,7 @@ export default function Login() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    window.location.href = "/api/auth/google";
-  };
+
 
   const isLoading = registerMutation.isPending || loginMutation.isPending;
 
@@ -148,27 +146,7 @@ export default function Login() {
             </Button>
           </form>
 
-          {/* فاصل */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-background text-muted-foreground">أو</span>
-            </div>
-          </div>
 
-          {/* تسجيل الدخول عبر Google */}
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={handleGoogleLogin}
-            disabled={isLoading}
-          >
-            <Chrome className="w-5 h-5 ml-2" />
-            تسجيل الدخول عبر Google
-          </Button>
 
           {/* تبديل بين التسجيل والدخول */}
           <div className="text-center text-sm">
