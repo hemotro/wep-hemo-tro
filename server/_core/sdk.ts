@@ -268,7 +268,14 @@ class SDKServer {
 
     const sessionUserId = session.openId;
     const signedInAt = new Date();
+    
+    // محاولة البحث عن المستخدم بـ openId (OAuth)
     let user = await db.getUserByOpenId(sessionUserId);
+    
+    // إذا لم نجده، ربما يكون مستخدم بريد - نحاول البحث بـ email
+    if (!user && session.name) {
+      user = await db.getUserByEmail(session.name);
+    }
 
     // If user not in DB, sync from OAuth server automatically
     if (!user) {

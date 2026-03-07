@@ -2,6 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
+import { sdk } from "./_core/sdk";
 import { z } from "zod";
 import { 
   getAllSeries, getSeriesById, getEpisodesBySeriesId, getEpisodeById, 
@@ -69,11 +70,19 @@ export const appRouter = router({
         try {
           const user = await loginWithEmail(input.email, input.password);
           
+          // إنشاء JWT session token باستخدام email كـ openId
+          const sessionToken = await sdk.signSession({
+            openId: user.email || user.id.toString(),
+            appId: process.env.VITE_APP_ID || '',
+            name: user.email || user.name || '',
+          });
+          
           // إنشاء session cookie
           const cookieOptions = getSessionCookieOptions(ctx.req);
-          ctx.res.setHeader("Set-Cookie", `${COOKIE_NAME}=${user.id}; ${Object.entries(cookieOptions)
+          const cookieString = `${COOKIE_NAME}=${sessionToken}; ${Object.entries(cookieOptions)
             .map(([key, value]) => `${key}=${value}`)
-            .join("; ")}`);
+            .join("; ")}`;
+          ctx.res.setHeader("Set-Cookie", cookieString);
 
           return { 
             success: true, 
