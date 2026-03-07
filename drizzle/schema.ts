@@ -19,6 +19,12 @@ export const users = mysqlTable("users", {
   googleId: varchar("googleId", { length: 255 }).unique(),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  emailVerified: boolean("emailVerified").default(false),
+  emailVerificationCode: varchar("emailVerificationCode", { length: 10 }),
+  emailVerificationExpiry: timestamp("emailVerificationExpiry"),
+  rememberMe: boolean("rememberMe").default(false),
+  passwordResetToken: varchar("passwordResetToken", { length: 255 }),
+  passwordResetExpiry: timestamp("passwordResetExpiry"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -202,3 +208,33 @@ export const seriesCategories = mysqlTable("seriesCategories", {
 
 export type SeriesCategory = typeof seriesCategories.$inferSelect;
 export type InsertSeriesCategory = typeof seriesCategories.$inferInsert;
+
+
+/**
+ * جدول رموز التحقق من البريد الإلكتروني
+ */
+export const emailVerificationTokens = mysqlTable("emailVerificationTokens", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  token: varchar("token", { length: 255 }).unique().notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;
+export type InsertEmailVerificationToken = typeof emailVerificationTokens.$inferInsert;
+
+/**
+ * جدول رموز استعادة كلمة السر
+ */
+export const passwordResetTokens = mysqlTable("passwordResetTokens", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  token: varchar("token", { length: 255 }).unique().notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  used: boolean("used").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;

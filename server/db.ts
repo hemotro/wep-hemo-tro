@@ -1,4 +1,4 @@
-import { eq, and, asc } from "drizzle-orm";
+import { eq, and, asc, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, InsertFavorite, seriesImages, InsertSeriesImage, channels, Channel, InsertChannel, uploadedVideos, watchHistory, InsertWatchHistory, categories, seriesCategories, Category, InsertCategory } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -665,4 +665,160 @@ export async function getCategoriesWithSeries() {
   );
   
   return result;
+}
+
+
+// ==================== المصادقة المتقدمة ====================
+
+import { emailVerificationTokens, passwordResetTokens, InsertEmailVerificationToken, InsertPasswordResetToken } from "../drizzle/schema";
+import crypto from "crypto";
+
+// دالة لإنشاء رمز التحقق من البريد الإلكتروني
+export async function createEmailVerificationToken(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  const token = crypto.randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 ساعة
+
+  await db.insert(emailVerificationTokens).values({
+    userId,
+    token,
+    expiresAt,
+  });
+
+  return token;
+}
+
+// دالة للتحقق من رمز البريد الإلكتروني
+export async function verifyEmailToken(token: string) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  const result = await db.select().from(emailVerificationTokens).where(
+    eq(emailVerificationTokens.token, token)
+  ).limit(1);
+
+  if (result.length === 0) {
+    throw new Error("الرمز غير صحيح");
+  }
+
+  const verification = result[0];
+  if (new Date() > verification.expiresAt) {
+    throw new Error("انتهت صلاحية الرمز");
+  }
+
+  // تحديث حالة التحقق من البريد
+  const user = await db.select().from(users).where(eq(users.id, verification.userId)).limit(1);
+  if (user.length > 0) {
+    await db.update(users).set({ emailVerified: true }).where(eq(users.id, verification.userId));
+  }
+
+  // حذف الرمز بعد الاستخدام
+  await db.delete(emailVerificationTokens).where(eq(emailVerificationTokens.token, token));
+
+  return user[0];
+}
+
+// دالة لإنشاء رمز استعادة كلمة السر
+export async function createPasswordResetToken(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  const token = crypto.randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // ساعة واحدة
+
+  await db.insert(passwordResetTokens).values({
+    userId,
+    token,
+    expiresAt,
+    used: false,
+  });
+
+  return token;
+}
+
+// دالة للتحقق من رمز استعادة كلمة السر وتحديثها
+export async function resetPasswordWithToken(token: string, newPassword: string) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  const result = await db.select().from(passwordResetTokens).where(
+    eq(passwordResetTokens.token, token)
+  ).limit(1);
+
+  if (result.length === 0) {
+    throw new Error("الرمز غير صحيح");
+  }
+
+  const resetToken = result[0];
+  if (new Date() > resetToken.expiresAt) {
+    throw new Error("انتهت صلاحية الرمز");
+  }
+
+  if (resetToken.used) {
+    throw new Error("تم استخدام هذا الرمز بالفعل");
+  }
+
+  // تشفير كلمة السر الجديدة
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  // تحديث كلمة السر
+  await db.update(users).set({ password: hashedPassword }).where(eq(users.id, resetToken.userId));
+
+  // تحديث الرمز كمستخدم
+  await db.update(passwordResetTokens).set({ used: true }).where(eq(passwordResetTokens.token, token));
+
+  return { success: true };
+}
+
+// دالة للتحقق من صحة رمز استعادة كلمة السر
+export async function verifyPasswordResetToken(token: string) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  const result = await db.select().from(passwordResetTokens).where(
+    eq(passwordResetTokens.token, token)
+  ).limit(1);
+
+  if (result.length === 0) {
+    throw new Error("الرمز غير صحيح");
+  }
+
+  const resetToken = result[0];
+  if (new Date() > resetToken.expiresAt) {
+    throw new Error("انتهت صلاحية الرمز");
+  }
+
+  if (resetToken.used) {
+    throw new Error("تم استخدام هذا الرمز بالفعل");
+  }
+
+  return resetToken;
+}
+
+// دالة لحذف رموز البريد الإلكتروني المنتهية
+export async function deleteExpiredEmailTokens() {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  const now = new Date();
+  await db.delete(emailVerificationTokens).where(
+    lt(emailVerificationTokens.expiresAt, now)
+  );
+
+  return { success: true };
+}
+
+// دالة لحذف رموز استعادة كلمة السر المنتهية
+export async function deleteExpiredPasswordTokens() {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  const now = new Date();
+  await db.delete(passwordResetTokens).where(
+    lt(passwordResetTokens.expiresAt, now)
+  );
+
+  return { success: true };
 }

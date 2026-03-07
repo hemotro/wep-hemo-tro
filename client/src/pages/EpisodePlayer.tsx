@@ -61,6 +61,7 @@ export default function EpisodePlayer() {
             videoUrl={currentEpisode.videoUrl}
             title={`${series.titleAr} - الحلقة ${currentEpisode.episodeNumber}: ${currentEpisode.titleAr}`}
             episodeNumber={`${currentEpisode.episodeNumber}`}
+            isLive={false}
           />
         </div>
       </div>
