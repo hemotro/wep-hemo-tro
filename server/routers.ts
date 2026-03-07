@@ -102,17 +102,17 @@ export const appRouter = router({
   }),
 
   series: router({
-    list: protectedProcedure.query(async () => {
+    list: publicProcedure.query(async () => {
       return await getAllSeries();
     }),
 
-    getById: protectedProcedure
+    getById: publicProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
         return await getSeriesById(input.id);
       }),
 
-    getEpisodes: protectedProcedure
+    getEpisodes: publicProcedure
       .input(z.object({ 
         seriesId: z.number(),
         season: z.number().optional()
@@ -121,7 +121,7 @@ export const appRouter = router({
         return await getEpisodesBySeriesId(input.seriesId, input.season);
       }),
 
-    getEpisode: protectedProcedure
+    getEpisode: publicProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
         return await getEpisodeById(input.id);
