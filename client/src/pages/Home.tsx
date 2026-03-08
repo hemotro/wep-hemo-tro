@@ -116,8 +116,8 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero Section - 70vh */}
-      <div className="relative w-full h-screen md:h-[70vh] overflow-hidden bg-gradient-to-br from-primary/20 to-background">
+      {/* Hero Section - 60vh على الهاتف، 70vh على الشاشات الكبيرة */}
+      <div className="relative w-full h-[60vh] md:h-[70vh] overflow-hidden bg-gradient-to-br from-primary/20 to-background">
         {currentSeries && (
           <div
             ref={carouselRef}
