@@ -105,8 +105,12 @@ export async function registerUser(email: string, password: string, name: string
   // تشفير كلمة السر
   const hashedPassword = await bcrypt.hash(password, 10);
 
+  // إنشاء openId فريد للمستخدم (استخدام البريد الإلكتروني كـ openId)
+  const openId = `email_${email}`;
+
   // إنشاء مستخدم جديد
   const result = await db.insert(users).values({
+    openId,
     email,
     password: hashedPassword,
     name,
@@ -134,6 +138,15 @@ export async function loginWithEmail(email: string, password: string) {
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
     throw new Error("البريد الإلكتروني أو كلمة السر غير صحيحة");
+  }
+
+  // التأكد من وجود openId
+  if (!user.openId) {
+    // إذا لم يكن هناك openId لسبب ما (مستخدم قديم)، نشئ واحداً
+    const openId = `email_${email}`;
+    // تحديث المستخدم بالعلاقة openId
+    await db.update(users).set({ openId }).where(eq(users.id, user.id));
+    user.openId = openId;
   }
 
   return user;

@@ -70,9 +70,9 @@ export const appRouter = router({
         try {
           const user = await loginWithEmail(input.email, input.password);
           
-          // إنشاء JWT session token باستخدام email كـ openId
+          // إنشاء JWT session token باستخدام openId الفعلي
           const sessionToken = await sdk.signSession({
-            openId: user.email || user.id.toString(),
+            openId: user.openId || `email_${user.email}`,
             appId: process.env.VITE_APP_ID || '',
             name: user.email || user.name || '',
           });

@@ -262,23 +262,29 @@ class SDKServer {
     const sessionCookie = cookies.get(COOKIE_NAME);
     const session = await this.verifySession(sessionCookie);
 
-    if (!session) {
       throw ForbiddenError("Invalid session cookie");
     }
 
     const sessionUserId = session.openId;
     const signedInAt = new Date();
     
-    // محاولة البحث عن المستخدم بـ openId (OAuth)
+    // محاولة البحث عن المستخدم بـ openId
     let user = await db.getUserByOpenId(sessionUserId);
     
     // إذا لم نجده، ربما يكون مستخدم بريد - نحاول البحث بـ email
-    if (!user && session.name) {
       user = await db.getUserByEmail(session.name);
+      
+      // التأكد من مطابقة openId للمستخدمين البريد
+      if (user && user.openId) {
+        // التحقق من أن openId مطابق للجلسة
+        if (sessionUserId !== user.openId) {
+          // عدم مطابقة - قد يكون مستخدم آخر
+          user = null;
+        }
+      }
     }
 
     // If user not in DB, sync from OAuth server automatically
-    if (!user) {
       try {
         const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
         await db.upsertUser({
@@ -291,11 +297,11 @@ class SDKServer {
         user = await db.getUserByOpenId(userInfo.openId);
       } catch (error) {
         console.error("[Auth] Failed to sync user from OAuth:", error);
-        throw ForbiddenError("Failed to sync user info");
+        console.warn("[Auth] User might be email-based, skipping OAuth sync");
+        // لا نرمي خطأ هنا - قد يكون المستخدم مستخدم بريد وليس OAuth
       }
     }
 
-    if (!user) {
       throw ForbiddenError("User not found");
     }
 
