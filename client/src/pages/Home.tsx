@@ -1,12 +1,14 @@
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
-import { Play } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { Play, Info, LogIn } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
 export default function Home() {
+  const [, setLocation] = useLocation();
   const { data: seriesList, isLoading } = trpc.series.list.useQuery();
+  const { data: user } = trpc.auth.me.useQuery();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
   const [touchStart, setTouchStart] = useState(0);
@@ -65,10 +67,10 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 pb-20 flex items-center justify-center">
+      <div className="flex-1 pb-20 flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">جاري تحميل المسلسلات...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-gray-300">جاري تحميل المسلسلات...</p>
         </div>
       </div>
     );
@@ -76,10 +78,10 @@ export default function Home() {
 
   if (!seriesList || seriesList.length === 0) {
     return (
-      <div className="flex-1 pb-20 flex items-center justify-center">
+      <div className="flex-1 pb-20 flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-foreground mb-4">مرحباً بك في hemo tro</h1>
-          <p className="text-muted-foreground">لا توجد مسلسلات حالياً</p>
+          <h1 className="text-4xl font-bold text-white mb-4">🎬 مرحباً بك في hemo tro</h1>
+          <p className="text-gray-300 text-lg">لا توجد مسلسلات حالياً</p>
         </div>
       </div>
     );
@@ -92,32 +94,38 @@ export default function Home() {
   const parallaxOffset = scrollY * 0.5;
 
   return (
-    <div className="flex-1 pb-20">
+    <div className="flex-1 pb-20 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Header الذكي - يظهر عند التمرير */}
       <header
         className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
           showSmallHeader
-            ? "bg-background/80 backdrop-blur-md border-b border-border/30 py-2"
+            ? "bg-slate-900/95 backdrop-blur-md border-b border-purple-500/20 py-2 shadow-lg"
             : "bg-transparent border-b border-transparent py-3"
         }`}
       >
-        <div className="flex items-center justify-end px-4 md:px-6">
+        <div className="flex items-center justify-between px-4 md:px-6">
+          <div className="flex items-center gap-4">
+            {user && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 rounded-full border border-purple-500/30">
+                <span className="text-2xl">{user.avatar ? "🎭" : "👤"}</span>
+                <span className="text-sm text-purple-300 font-medium">{user.displayName || user.name}</span>
+              </div>
+            )}
+          </div>
           <Link href="/">
             <a className="hover:opacity-80 transition-opacity">
-              <img
-                src="/logo-new.png"
-                alt="hemo tro"
-                className={`w-auto object-contain drop-shadow-lg transition-all duration-300 ${
-                  showSmallHeader ? "h-8" : "h-0 opacity-0"
-                }`}
-              />
+              <span className={`text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent transition-all duration-300 ${
+                showSmallHeader ? "text-lg" : "text-2xl"
+              }`}>
+                🎬 hemo tro
+              </span>
             </a>
           </Link>
         </div>
       </header>
 
       {/* Hero Section - 60vh على الهاتف، 70vh على الشاشات الكبيرة */}
-      <div className="relative w-full h-[60vh] md:h-[70vh] overflow-hidden bg-gradient-to-br from-primary/20 to-background">
+      <div className="relative w-full h-[60vh] md:h-[70vh] overflow-hidden bg-gradient-to-br from-purple-900/40 to-slate-900">
         {currentSeries && (
           <div
             ref={carouselRef}
@@ -138,46 +146,67 @@ export default function Home() {
                   }}
                 />
                 {/* Gradient أسود خفيف في الأعلى */}
-                <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/40 via-black/20 to-transparent"></div>
+                <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/60 via-black/30 to-transparent"></div>
               </>
             )}
 
-            {/* Gradient أسود قوي في الأسفل */}
-            <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
+            {/* Gradient قوي في الأسفل */}
+            <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent"></div>
 
             {/* الشعار الصغير في الأعلى اليمين */}
             <Link href="/">
               <a className="absolute top-4 md:top-6 right-4 md:right-6 z-30 hover:opacity-80 transition-opacity">
-                <img
-                  src="/logo-new.png"
-                  alt="hemo tro"
-                  className="h-8 sm:h-10 md:h-12 w-auto object-contain drop-shadow-lg"
-                />
+                <span className="text-2xl md:text-3xl font-bold">🎬</span>
               </a>
             </Link>
 
             {/* معلومات المسلسل - في الأسفل */}
             <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8 lg:p-12">
-              <div className="max-w-2xl">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 drop-shadow-lg">
+              <div className="max-w-3xl">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-3 drop-shadow-lg">
                   {currentSeries.titleAr}
                 </h2>
-                <p className="text-primary text-sm sm:text-base md:text-lg mb-4 drop-shadow-lg">
+                <p className="text-purple-300 text-sm sm:text-base md:text-lg mb-2 drop-shadow-lg font-semibold">
                   {currentSeries.genre}
                 </p>
-                <Link href={`/series/${currentSeries.id}`}>
-                  <a>
-                    <Button className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground text-base py-3 px-8 rounded-lg">
-                      <Play className="w-5 h-5 mr-2" />
-                      شاهد الآن
+                <p className="text-gray-300 text-sm sm:text-base mb-6 line-clamp-2 drop-shadow-lg">
+                  {currentSeries.descriptionAr}
+                </p>
+                
+                {/* الأزرار */}
+                <div className="flex gap-3 flex-wrap">
+                  {user ? (
+                    <Link href={`/series/${currentSeries.id}`}>
+                      <a>
+                        <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-base py-3 px-8 rounded-lg font-semibold">
+                          <Play className="w-5 h-5 mr-2" />
+                          شاهد الآن
+                        </Button>
+                      </a>
+                    </Link>
+                  ) : (
+                    <Button 
+                      onClick={() => setLocation("/login")}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-base py-3 px-8 rounded-lg font-semibold"
+                    >
+                      <LogIn className="w-5 h-5 mr-2" />
+                      سجل الدخول لمشاهدة
                     </Button>
-                  </a>
-                </Link>
+                  )}
+                  <Link href={`/series/${currentSeries.id}`}>
+                    <a>
+                      <Button variant="outline" className="border-purple-500/50 text-white hover:bg-purple-500/10 text-base py-3 px-8 rounded-lg font-semibold">
+                        <Info className="w-5 h-5 mr-2" />
+                        معلومات
+                      </Button>
+                    </a>
+                  </Link>
+                </div>
               </div>
             </div>
 
             {/* مؤشرات الشرائح */}
-            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+            <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex gap-2 z-10">
               {seriesList.map((_, index) => (
                 <button
                   key={index}
@@ -187,8 +216,8 @@ export default function Home() {
                   }}
                   className={`rounded-full transition-all ${
                     index === currentSlide
-                      ? "bg-primary w-6 h-2"
-                      : "bg-white/50 hover:bg-white/70 w-2 h-2"
+                      ? "bg-gradient-to-r from-purple-500 to-pink-500 w-8 h-2"
+                      : "bg-white/40 hover:bg-white/60 w-2 h-2"
                   }`}
                   aria-label={`انتقل إلى الشريحة ${index + 1}`}
                 />
@@ -198,42 +227,62 @@ export default function Home() {
         )}
       </div>
 
-      {/* قائمة أفقية للمسلسلات */}
-      <div className="px-4 py-6 md:py-8">
-        <h3 className="text-lg md:text-xl font-bold text-foreground mb-4">جميع المسلسلات</h3>
-        <div className="overflow-x-auto pb-4">
+      {/* قائمة المسلسلات */}
+      <div className="px-4 py-8 md:py-12">
+        <h3 className="text-2xl md:text-3xl font-bold text-white mb-6">جميع المسلسلات</h3>
+        <div className="overflow-x-auto pb-4 scrollbar-hide">
           <div className="flex gap-4 min-w-min">
             {seriesList.map((series) => (
-              <Link key={series.id} href={`/series/${series.id}`}>
-                <a className="flex-shrink-0 group">
-                  <div className="relative w-32 h-48 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-background">
-                    {series.posterUrl ? (
-                      <>
-                        <img
-                          src={series.posterUrl}
-                          alt={series.titleAr}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors flex items-end justify-center pb-3 opacity-0 group-hover:opacity-100">
-                          <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                            <Play className="w-3 h-3 mr-1" />
-                            شاهد
-                          </Button>
+              <div key={series.id} className="flex-shrink-0 group">
+                <Link href={`/series/${series.id}`}>
+                  <a className="block">
+                    <div className="relative w-40 h-56 rounded-xl overflow-hidden bg-gradient-to-br from-purple-900/40 to-slate-900 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+                      {series.posterUrl ? (
+                        <>
+                          <img
+                            src={series.posterUrl}
+                            alt={series.titleAr}
+                            className="w-full h-full object-cover group-hover:brightness-50 transition-all duration-300"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col items-end justify-between p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <Button size="sm" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white w-full">
+                              <Play className="w-4 h-4 mr-1" />
+                              شاهد
+                            </Button>
+                            <div className="text-right">
+                              <p className="text-xs text-gray-300">{series.totalEpisodes} حلقة</p>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-gradient-to-br from-purple-900/60 to-slate-900">
+                          <p className="text-sm font-semibold text-white mb-2">{series.titleAr}</p>
+                          <p className="text-xs text-gray-300">{series.totalEpisodes} حلقة</p>
                         </div>
-                      </>
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center">
-                        <p className="text-sm font-semibold text-foreground mb-2">{series.titleAr}</p>
-                        <p className="text-xs text-muted-foreground">{series.totalEpisodes} حلقة</p>
-                      </div>
-                    )}
-                  </div>
-                </a>
-              </Link>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-300 mt-2 font-medium truncate">{series.titleAr}</p>
+                  </a>
+                </Link>
+              </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* إذا لم يكن المستخدم مسجل دخول - عرض دعوة للتسجيل */}
+      {!user && (
+        <div className="mx-4 mb-8 p-8 bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-2xl text-center">
+          <h3 className="text-2xl font-bold text-white mb-3">🎉 انضم إلينا الآن</h3>
+          <p className="text-gray-300 mb-6">استمتع بمشاهدة أفضل المسلسلات والأفلام بدون حدود</p>
+          <Button 
+            onClick={() => setLocation("/login")}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-8 rounded-lg"
+          >
+            إنشاء حساب مجاني
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

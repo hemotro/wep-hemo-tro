@@ -47,10 +47,22 @@ export const appRouter = router({
         email: z.string().email("البريد الإلكتروني غير صحيح"),
         password: z.string().min(6, "كلمة السر يجب أن تكون 6 أحرف على الأقل"),
         name: z.string().min(2, "الاسم يجب أن يكون حرفين على الأقل"),
+        displayName: z.string().min(2, "الاسم المستعار مطلوب"),
+        gender: z.enum(["male", "female", "other"]).optional(),
+        avatar: z.string().optional(),
+        avatarType: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
         try {
-          await registerUser(input.email, input.password, input.name);
+          await registerUser(
+            input.email, 
+            input.password, 
+            input.name,
+            input.displayName,
+            input.gender,
+            input.avatar,
+            input.avatarType
+          );
           return { success: true, message: "تم إنشاء الحساب بنجاح" };
         } catch (error: any) {
           throw new TRPCError({

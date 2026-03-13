@@ -92,7 +92,15 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function registerUser(email: string, password: string, name: string) {
+export async function registerUser(
+  email: string, 
+  password: string, 
+  name: string,
+  displayName?: string,
+  gender?: string,
+  avatar?: string,
+  avatarType?: string
+) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة");
 
@@ -114,6 +122,10 @@ export async function registerUser(email: string, password: string, name: string
     email,
     password: hashedPassword,
     name,
+    displayName: displayName || name,
+    gender: (gender as any) || "other",
+    avatar: avatar || "avatar1",
+    avatarType: avatarType || "cartoon",
     loginMethod: "email",
     role: "user",
   });
