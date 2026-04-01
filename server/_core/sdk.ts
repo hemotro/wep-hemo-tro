@@ -262,6 +262,7 @@ class SDKServer {
     const sessionCookie = cookies.get(COOKIE_NAME);
     const session = await this.verifySession(sessionCookie);
 
+    if (!session) {
       throw ForbiddenError("Invalid session cookie");
     }
 
@@ -272,6 +273,7 @@ class SDKServer {
     let user = await db.getUserByOpenId(sessionUserId);
     
     // إذا لم نجده، ربما يكون مستخدم بريد - نحاول البحث بـ email
+    if (!user) {
       user = await db.getUserByEmail(session.name);
       
       // التأكد من مطابقة openId للمستخدمين البريد
@@ -279,12 +281,13 @@ class SDKServer {
         // التحقق من أن openId مطابق للجلسة
         if (sessionUserId !== user.openId) {
           // عدم مطابقة - قد يكون مستخدم آخر
-          user = null;
+          user = undefined;
         }
       }
     }
 
     // If user not in DB, sync from OAuth server automatically
+    if (!user) {
       try {
         const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
         await db.upsertUser({
@@ -302,6 +305,7 @@ class SDKServer {
       }
     }
 
+    if (!user) {
       throw ForbiddenError("User not found");
     }
 
