@@ -6,7 +6,7 @@ import { sdk } from "./_core/sdk";
 import { z } from "zod";
 import { 
   getAllSeries, getSeriesById, getEpisodesBySeriesId, getEpisodeById, 
-  registerUser, loginWithEmail, createSeries, updateSeries, deleteSeries,
+  registerUser, loginWithEmail, createAdminUser, createSeries, updateSeries, deleteSeries,
   createEpisode, updateEpisode, deleteEpisode,
   addFavorite, removeFavorite, getUserFavorites, isFavorite,
   addSeriesImage, getSeriesImages, deleteSeriesImage, setDefaultImage,
@@ -96,6 +96,24 @@ export const appRouter = router({
           throw new TRPCError({
             code: "UNAUTHORIZED",
             message: error.message || "فشل تسجيل الدخول",
+          });
+        }
+      }),
+
+    createAdmin: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        password: z.string().min(6),
+        name: z.string().min(2),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          await createAdminUser(input.email, input.password, input.name);
+          return { success: true, message: "تم إنشاء حساب المسؤول بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message || "فشل إنشاء حساب المسؤول",
           });
         }
       }),

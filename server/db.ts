@@ -92,6 +92,28 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+export async function createAdminUser(email: string, password: string, name: string) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  // حذف المستخدم القديم إن وجد
+  await db.delete(users).where(eq(users.email, email)).catch(() => {});
+
+  // تشفير كلمة السر
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  // إنشاء مستخدم مسؤول جديد
+  const result = await db.insert(users).values({
+    email,
+    password: hashedPassword,
+    name,
+    loginMethod: "email",
+    role: "admin",
+  });
+
+  return result;
+}
+
 export async function registerUser(email: string, password: string, name: string) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة");
