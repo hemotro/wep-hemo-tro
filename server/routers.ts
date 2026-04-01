@@ -47,22 +47,10 @@ export const appRouter = router({
         email: z.string().email("البريد الإلكتروني غير صحيح"),
         password: z.string().min(6, "كلمة السر يجب أن تكون 6 أحرف على الأقل"),
         name: z.string().min(2, "الاسم يجب أن يكون حرفين على الأقل"),
-        displayName: z.string().min(2, "الاسم المستعار مطلوب"),
-        gender: z.enum(["male", "female", "other"]).optional(),
-        avatar: z.string().optional(),
-        avatarType: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
         try {
-          await registerUser(
-            input.email, 
-            input.password, 
-            input.name,
-            input.displayName,
-            input.gender,
-            input.avatar,
-            input.avatarType
-          );
+          await registerUser(input.email, input.password, input.name);
           return { success: true, message: "تم إنشاء الحساب بنجاح" };
         } catch (error: any) {
           throw new TRPCError({
@@ -82,9 +70,9 @@ export const appRouter = router({
         try {
           const user = await loginWithEmail(input.email, input.password);
           
-          // إنشاء JWT session token باستخدام openId الفعلي
+          // إنشاء JWT session token باستخدام email كـ openId
           const sessionToken = await sdk.signSession({
-            openId: user.openId || `email_${user.email}`,
+            openId: user.email || user.id.toString(),
             appId: process.env.VITE_APP_ID || '',
             name: user.email || user.name || '',
           });

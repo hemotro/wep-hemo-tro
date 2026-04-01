@@ -25,11 +25,6 @@ export const users = mysqlTable("users", {
   rememberMe: boolean("rememberMe").default(false),
   passwordResetToken: varchar("passwordResetToken", { length: 255 }),
   passwordResetExpiry: timestamp("passwordResetExpiry"),
-  // حقول تخصيص الحساب الشخصي
-  displayName: varchar("displayName", { length: 255 }), // الاسم المستعار الذي يظهر للمستخدمين
-  gender: mysqlEnum("gender", ["male", "female", "other"]), // الجنس
-  avatar: varchar("avatar", { length: 500 }), // رابط الصورة الكرتونية أو الصورة الشخصية
-  avatarType: varchar("avatarType", { length: 50 }), // نوع الصورة (cartoon, custom, etc)
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

@@ -269,21 +269,12 @@ class SDKServer {
     const sessionUserId = session.openId;
     const signedInAt = new Date();
     
-    // محاولة البحث عن المستخدم بـ openId
+    // محاولة البحث عن المستخدم بـ openId (OAuth)
     let user = await db.getUserByOpenId(sessionUserId);
     
     // إذا لم نجده، ربما يكون مستخدم بريد - نحاول البحث بـ email
-    if (!user) {
+    if (!user && session.name) {
       user = await db.getUserByEmail(session.name);
-      
-      // التأكد من مطابقة openId للمستخدمين البريد
-      if (user && user.openId) {
-        // التحقق من أن openId مطابق للجلسة
-        if (sessionUserId !== user.openId) {
-          // عدم مطابقة - قد يكون مستخدم آخر
-          user = undefined;
-        }
-      }
     }
 
     // If user not in DB, sync from OAuth server automatically
@@ -300,8 +291,7 @@ class SDKServer {
         user = await db.getUserByOpenId(userInfo.openId);
       } catch (error) {
         console.error("[Auth] Failed to sync user from OAuth:", error);
-        console.warn("[Auth] User might be email-based, skipping OAuth sync");
-        // لا نرمي خطأ هنا - قد يكون المستخدم مستخدم بريد وليس OAuth
+        throw ForbiddenError("Failed to sync user info");
       }
     }
 
