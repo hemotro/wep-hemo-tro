@@ -34,8 +34,7 @@ export const appRouter = router({
     me: publicProcedure.query(opts => opts.ctx.user),
     
     logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      sdk.clearSessionCookie(ctx.res);
       return {
         success: true,
       } as const;
@@ -70,19 +69,15 @@ export const appRouter = router({
         try {
           const user = await loginWithEmail(input.email, input.password);
           
-          // إنشاء JWT session token باستخدام email كـ openId
-          const sessionToken = await sdk.signSession({
-            openId: user.email || user.id.toString(),
-            appId: process.env.VITE_APP_ID || '',
-            name: user.email || user.name || '',
+          // إنشاء JWT session token
+          const sessionToken = sdk.createSessionToken({
+            userId: user.id,
+            email: user.email || '',
+            name: user.name || '',
           });
           
-          // إنشاء session cookie
-          const cookieOptions = getSessionCookieOptions(ctx.req);
-          const cookieString = `${COOKIE_NAME}=${sessionToken}; ${Object.entries(cookieOptions)
-            .map(([key, value]) => `${key}=${value}`)
-            .join("; ")}`;
-          ctx.res.setHeader("Set-Cookie", cookieString);
+          // حفظ الجلسة في الـ cookie
+          sdk.setSessionCookie(ctx.res, sessionToken);
 
           return { 
             success: true, 
