@@ -15,8 +15,10 @@ import {
   createUploadedVideo, getUploadedVideoByEpisodeId, updateEpisodeVideo, deleteUploadedVideo,
   saveWatchHistory, getWatchHistory, getUserSeriesWatchHistory,
   createCategory, getCategories, getCategoryById, updateCategory, deleteCategory,
-  addSeriesToCategory, removeSeriesFromCategory, getSeriesByCategory, getCategoriesWithSeries
+  addSeriesToCategory, removeSeriesFromCategory, getSeriesByCategory, getCategoriesWithSeries,
+  requestPasswordReset, resetPasswordWithToken, verifyPasswordResetToken
 } from "./db";
+import { sendPasswordResetEmail } from "./_core/email";
 import { storagePut } from "./storage";
 import { TRPCError } from "@trpc/server";
 
@@ -109,6 +111,73 @@ export const appRouter = router({
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: error.message || "فشل إنشاء حساب المسؤول",
+          });
+        }
+      }),
+
+    requestPasswordReset: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const { token, user } = await requestPasswordReset(input.email);
+          
+          try {
+            await sendPasswordResetEmail(user.email || '', token, user.name || 'المستخدم');
+          } catch (emailError) {
+            console.error('Email error:', emailError);
+          }
+          
+          return { 
+            success: true, 
+            message: "تم إرسال رابط استعادة كلمة السر إلى بريدك الإلكتروني"
+          };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message || "فشل طلب استعادة كلمة السر",
+          });
+        }
+      }),
+
+    verifyPasswordResetToken: publicProcedure
+      .input(z.object({
+        token: z.string(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          const resetToken = await verifyPasswordResetToken(input.token);
+          return { 
+            success: true, 
+            valid: true,
+            userId: resetToken.userId
+          };
+        } catch (error: any) {
+          return { 
+            success: false, 
+            valid: false,
+            message: error.message || "الرمز غير صحيح أو منتهي الصلاحية"
+          };
+        }
+      }),
+
+    resetPassword: publicProcedure
+      .input(z.object({
+        token: z.string(),
+        newPassword: z.string().min(6),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          await resetPasswordWithToken(input.token, input.newPassword);
+          return { 
+            success: true, 
+            message: "تم تحديث كلمة السر بنجاح"
+          };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message || "فشل تحديث كلمة السر",
           });
         }
       }),

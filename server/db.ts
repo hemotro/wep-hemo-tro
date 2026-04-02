@@ -742,6 +742,33 @@ export async function verifyEmailToken(token: string) {
   return user[0];
 }
 
+// دالة لطلب استعادة كلمة السر (البحث عن المستخدم بالبريد)
+export async function requestPasswordReset(email: string) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  // البحث عن المستخدم بالبريد الإلكتروني
+  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  if (result.length === 0) {
+    throw new Error("البريد الإلكتروني غير موجود");
+  }
+
+  const user = result[0];
+  
+  // إنشاء رمز استعادة كلمة السر
+  const token = crypto.randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // ساعة واحدة
+
+  await db.insert(passwordResetTokens).values({
+    userId: user.id,
+    token,
+    expiresAt,
+    used: false,
+  });
+
+  return { token, user };
+}
+
 // دالة لإنشاء رمز استعادة كلمة السر
 export async function createPasswordResetToken(userId: number) {
   const db = await getDb();

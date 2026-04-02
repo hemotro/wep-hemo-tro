@@ -21,6 +21,7 @@ export default function Login() {
 
   const registerMutation = trpc.auth.register.useMutation();
   const loginMutation = trpc.auth.loginEmail.useMutation();
+  const forgotPasswordMutation = trpc.auth.requestPasswordReset.useMutation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,12 +81,22 @@ export default function Login() {
       return;
     }
 
-    toast.info("سيتم إرسال رابط استعادة كلمة السر إلى بريدك الإلكتروني");
-    setShowForgotPassword(false);
-    setForgotEmail("");
+    forgotPasswordMutation.mutate(
+      { email: forgotEmail },
+      {
+        onSuccess: () => {
+          toast.success("تم إرسال رابط استعادة كلمة السر إلى بريدك الإلكتروني");
+          setShowForgotPassword(false);
+          setForgotEmail("");
+        },
+        onError: (error: any) => {
+          setError(error.message || "فشل إرسال البريد الإلكتروني");
+        },
+      }
+    );
   };
 
-  const isLoading = registerMutation.isPending || loginMutation.isPending;
+  const isLoading = registerMutation.isPending || loginMutation.isPending || forgotPasswordMutation.isPending;
 
   return (
     <div className="flex-1 pb-20 flex items-center justify-center px-4 py-8">
