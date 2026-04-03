@@ -225,12 +225,13 @@ export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect
 export type InsertEmailVerificationToken = typeof emailVerificationTokens.$inferInsert;
 
 /**
- * جدول رموز استعادة كلمة السر
+ * جدول رموز استعادة كلمة السر - يحتوي على كود رقمي 6 أرقام
  */
 export const passwordResetTokens = mysqlTable("passwordResetTokens", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   token: varchar("token", { length: 255 }).unique().notNull(),
+  code: varchar("code", { length: 6 }).notNull(), // كود رقمي 6 أرقام
   expiresAt: timestamp("expiresAt").notNull(),
   used: boolean("used").default(false),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

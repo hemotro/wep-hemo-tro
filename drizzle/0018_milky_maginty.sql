@@ -1,0 +1,1 @@
+ALTER TABLE `passwordResetTokens` ADD `code` varchar(6) NOT NULL;

@@ -127,6 +127,13 @@
       "when": 1775066423707,
       "tag": "0017_handy_white_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1775220933568,
+      "tag": "0018_milky_maginty",
+      "breakpoints": true
     }
   ]
 }

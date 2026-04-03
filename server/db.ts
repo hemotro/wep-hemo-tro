@@ -755,18 +755,20 @@ export async function requestPasswordReset(email: string) {
 
   const user = result[0];
   
-  // إنشاء رمز استعادة كلمة السر
+  // إنشاء كود رقمي 6 أرقام
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
   const token = crypto.randomBytes(32).toString("hex");
-  const expiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // ساعة واحدة
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 دقائق
 
   await db.insert(passwordResetTokens).values({
     userId: user.id,
     token,
+    code,
     expiresAt,
     used: false,
   });
 
-  return { token, user };
+  return { token, code, user };
 }
 
 // دالة لإنشاء رمز استعادة كلمة السر
@@ -774,20 +776,71 @@ export async function createPasswordResetToken(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة");
 
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
   const token = crypto.randomBytes(32).toString("hex");
-  const expiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // ساعة واحدة
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 دقائق
 
   await db.insert(passwordResetTokens).values({
     userId,
     token,
+    code,
     expiresAt,
     used: false,
   });
 
-  return token;
+  return { token, code };
 }
 
-// دالة للتحقق من رمز استعادة كلمة السر وتحديثها
+// دالة للتحقق من الكود وتحديث كلمة السر
+export async function resetPasswordWithCode(email: string, code: string, newPassword: string) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  // البحث عن المستخدم
+  const userResult = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  if (userResult.length === 0) {
+    throw new Error("البريد الإلكتروني غير موجود");
+  }
+
+  const user = userResult[0];
+
+  // البحث عن الكود
+  const result = await db.select().from(passwordResetTokens).where(
+    eq(passwordResetTokens.code, code)
+  ).limit(1);
+
+  if (result.length === 0) {
+    throw new Error("الكود غير صحيح");
+  }
+
+  const resetToken = result[0];
+  
+  // التحقق من أن الكود خاص بهذا المستخدم
+  if (resetToken.userId !== user.id) {
+    throw new Error("الكود غير صحيح");
+  }
+
+  if (new Date() > resetToken.expiresAt) {
+    throw new Error("انتهت صلاحية الكود");
+  }
+
+  if (resetToken.used) {
+    throw new Error("تم استخدام هذا الكود بالفعل");
+  }
+
+  // تشفير كلمة السر الجديدة
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  // تحديث كلمة السر
+  await db.update(users).set({ password: hashedPassword }).where(eq(users.id, user.id));
+
+  // تحديث الكود كمستخدم
+  await db.update(passwordResetTokens).set({ used: true }).where(eq(passwordResetTokens.code, code));
+
+  return { success: true };
+}
+
+// دالة للتحقق من رمز استعادة كلمة السر وتحديثها (للتوافق مع الكود القديم)
 export async function resetPasswordWithToken(token: string, newPassword: string) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة");
@@ -821,7 +874,46 @@ export async function resetPasswordWithToken(token: string, newPassword: string)
   return { success: true };
 }
 
-// دالة للتحقق من صحة رمز استعادة كلمة السر
+// دالة للتحقق من صحة الكود
+export async function verifyPasswordResetCode(email: string, code: string) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  // البحث عن المستخدم
+  const userResult = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  if (userResult.length === 0) {
+    throw new Error("البريد الإلكتروني غير موجود");
+  }
+
+  const user = userResult[0];
+
+  const result = await db.select().from(passwordResetTokens).where(
+    eq(passwordResetTokens.code, code)
+  ).limit(1);
+
+  if (result.length === 0) {
+    return { valid: false, message: "الكود غير صحيح" };
+  }
+
+  const resetToken = result[0];
+  
+  // التحقق من أن الكود خاص بهذا المستخدم
+  if (resetToken.userId !== user.id) {
+    return { valid: false, message: "الكود غير صحيح" };
+  }
+
+  if (new Date() > resetToken.expiresAt) {
+    return { valid: false, message: "انتهت صلاحية الكود" };
+  }
+
+  if (resetToken.used) {
+    return { valid: false, message: "تم استخدام هذا الكود بالفعل" };
+  }
+
+  return { valid: true, message: "الكود صحيح" };
+}
+
+// دالة للتحقق من صحة رمز استعادة كلمة السر (للتوافق مع الكود القديم)
 export async function verifyPasswordResetToken(token: string) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة");

@@ -13,6 +13,7 @@ import EpisodePlayer from "./pages/EpisodePlayer";
 import Login from "./pages/Login";
 import Admin from "./pages/Admin";
 import ResetPassword from "./pages/ResetPassword";
+import PasswordResetCode from "./pages/PasswordResetCode";
 import BottomNav from "./components/BottomNav";
 
 import { Notifications, useNotifications } from "./components/Notifications";
@@ -24,6 +25,7 @@ function Router() {
       <Route path={"/login"} component={Login} />
       {/* Handle reset-password with or without query params */}
       <Route path={"/reset-password*"} component={ResetPassword} />
+      <Route path={"/reset-password-code"} component={PasswordResetCode} />
       <Route path={"/live"} component={Live} />
       <Route path={"/search"} component={Search} />
       <Route path={"/account"} component={Account} />

@@ -16,29 +16,37 @@ const transporter = nodemailer.createTransport({
 });
 
 /**
- * إرسال بريد استعادة كلمة المرور
+ * إرسال بريد استعادة كلمة المرور باستخدام كود رقمي
  */
 export async function sendPasswordResetEmail(
   email: string,
-  resetToken: string,
+  resetCode: string,
   userName: string
 ) {
-  const resetLink = `${ENV.frontendUrl}/reset-password?token=${resetToken}`;
-
   const htmlContent = `
-    <div style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
-      <h2>مرحباً ${userName}</h2>
-      <p>تلقينا طلباً لاستعادة كلمة المرور الخاصة بك.</p>
-      <p>انقر على الرابط أدناه لإعادة تعيين كلمة المرور:</p>
-      <a href="${resetLink}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
-        استعادة كلمة المرور
-      </a>
-      <p>أو انسخ الرابط التالي في متصفحك:</p>
-      <p style="word-break: break-all; color: #666;">${resetLink}</p>
-      <p style="color: #999; font-size: 12px; margin-top: 30px;">
-        ملاحظة: هذا الرابط صالح لمدة ساعة واحدة فقط.
-        إذا لم تطلب استعادة كلمة المرور، يرجى تجاهل هذا البريد.
-      </p>
+    <div style="font-family: Arial, sans-serif; direction: rtl; text-align: right; max-width: 600px; margin: 0 auto;">
+      <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px;">
+        <h2 style="color: #333; margin-bottom: 20px;">مرحباً ${userName}</h2>
+        
+        <p style="color: #555; font-size: 16px; margin-bottom: 15px;">تلقينا طلباً لاستعادة كلمة المرور الخاصة بك.</p>
+        
+        <p style="color: #555; font-size: 16px; margin-bottom: 20px;">استخدم الكود التالي لاستعادة كلمة المرور:</p>
+        
+        <div style="background-color: #fff; padding: 20px; border-radius: 8px; text-align: center; margin: 30px 0;">
+          <p style="color: #999; font-size: 12px; margin: 0 0 10px 0;">الكود الرقمي:</p>
+          <p style="font-size: 32px; font-weight: bold; color: #007bff; letter-spacing: 5px; margin: 0; font-family: 'Courier New', monospace;">${resetCode}</p>
+        </div>
+        
+        <p style="color: #555; font-size: 14px; margin: 20px 0;">هذا الكود صالح لمدة <strong>10 دقائق</strong> فقط.</p>
+        
+        <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; border-left: 4px solid #ffc107; margin: 20px 0;">
+          <p style="color: #856404; margin: 0; font-size: 14px;">⚠️ إذا لم تطلب استعادة كلمة المرور, يرجى تجاهل هذا البريد.</p>
+        </div>
+        
+        <p style="color: #999; font-size: 12px; margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px;">
+          هذا البريد من Hemo Tro. لا ترد على هذا البريد إذا كانت هذه رسالة عن طريق الخطأ.
+        </p>
+      </div>
     </div>
   `;
 
@@ -46,7 +54,7 @@ export async function sendPasswordResetEmail(
     await transporter.sendMail({
       from: process.env.EMAIL_USER || 'noreply@hemotro.com',
       to: email,
-      subject: 'استعادة كلمة المرور - Hemo Tro',
+      subject: 'كود استعادة كلمة المرور - Hemo Tro',
       html: htmlContent,
     });
 

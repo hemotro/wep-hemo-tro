@@ -85,9 +85,10 @@ export default function Login() {
       { email: forgotEmail },
       {
         onSuccess: () => {
-          toast.success("تم إرسال رابط استعادة كلمة السر إلى بريدك الإلكتروني");
+          toast.success("تم إرسال كود استعادة كلمة السر إلى بريدك الإلكتروني");
           setShowForgotPassword(false);
           setForgotEmail("");
+          setLocation("/reset-password-code");
         },
         onError: (error: any) => {
           setError(error.message || "فشل إرسال البريد الإلكتروني");
@@ -141,7 +142,7 @@ export default function Login() {
                 className="w-full bg-primary hover:bg-primary/90"
                 disabled={isLoading}
               >
-                {isLoading ? "جاري المعالجة..." : "إرسال رابط الاستعادة"}
+                {isLoading ? "جاري المعالجة..." : "إرسال الكود"}
               </Button>
 
               <Button
