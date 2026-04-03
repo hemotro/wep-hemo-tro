@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { ENV } from './env';
 
 /**
  * إعدادات البريد الإلكتروني
@@ -22,7 +23,7 @@ export async function sendPasswordResetEmail(
   resetToken: string,
   userName: string
 ) {
-  const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+  const resetLink = `${ENV.frontendUrl}/reset-password?token=${resetToken}`;
 
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
@@ -65,7 +66,7 @@ export async function sendVerificationEmail(
   verificationCode: string,
   userName: string
 ) {
-  const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?code=${verificationCode}`;
+  const verificationLink = `${ENV.frontendUrl}/verify-email?code=${verificationCode}`;
 
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
@@ -109,7 +110,7 @@ export async function sendWelcomeEmail(email: string, userName: string) {
       <p>أهلاً وسهلاً ${userName}!</p>
       <p>تم تفعيل حسابك بنجاح. يمكنك الآن الاستمتاع بمشاهدة أفضل المسلسلات الدرامية العربية.</p>
       <p>استكشف مجموعتنا الواسعة من المسلسلات والحلقات الحصرية.</p>
-      <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
+      <a href="${ENV.frontendUrl}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">
         ابدأ المشاهدة الآن
       </a>
       <p style="color: #999; font-size: 12px; margin-top: 30px;">
