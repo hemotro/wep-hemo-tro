@@ -22,7 +22,8 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/login"} component={Login} />
-      <Route path={"/reset-password"} component={ResetPassword} />
+      {/* Handle reset-password with or without query params */}
+      <Route path={"/reset-password*"} component={ResetPassword} />
       <Route path={"/live"} component={Live} />
       <Route path={"/search"} component={Search} />
       <Route path={"/account"} component={Account} />

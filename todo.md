@@ -66,3 +66,5 @@
 - [x] Fix FRONTEND_URL configuration in email links
 - [x] Add comprehensive email system tests
 - [x] Verify password reset token generation and validation
+- [x] Fix 404 error on reset-password page (update wouter route pattern)
+- [x] Test password reset flow with real tokens
