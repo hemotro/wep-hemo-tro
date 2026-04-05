@@ -7,12 +7,10 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Plus, Trash2, Play, AlertCircle, Edit2, Link as LinkIcon } from "lucide-react";
 import { useState, useEffect } from "react";
-import { SeriesImagesManager } from "@/components/SeriesImagesManager";
-import { useNotifications } from "@/components/Notifications";
 import { AdminCodeModal } from "@/components/AdminCodeModal";
 
 export default function Admin() {
-  const [, setLocation] = useLocation();
+  const [, navigate] = useLocation();
   const [selectedSeries, setSelectedSeries] = useState<number | null>(null);
   const [showSeriesForm, setShowSeriesForm] = useState(false);
   const [showEpisodeForm, setShowEpisodeForm] = useState(false);
@@ -43,18 +41,21 @@ export default function Admin() {
       <>
         <AdminCodeModal
           isOpen={showCodeModal}
-          onClose={() => setLocation("/")}
+          onClose={() => navigate("/")}
           onSuccess={handleCodeSuccess}
         />
       </>
     );
   }
 
-  // Queries و Mutations
-  const { data: seriesList, refetch: refetchSeries, isLoading: seriesLoading } = trpc.series.list.useQuery();
+  // Queries و Mutations - يتم استدعاؤها بعد التحقق من الرمز فقط
+  const { data: seriesList, refetch: refetchSeries, isLoading: seriesLoading } = trpc.series.list.useQuery(
+    undefined,
+    { enabled: isCodeVerified }
+  );
   const { data: episodes, refetch: refetchEpisodes } = trpc.series.getEpisodes.useQuery(
     { seriesId: selectedSeries || 0 },
-    { enabled: !!selectedSeries }
+    { enabled: isCodeVerified && !!selectedSeries }
   );
 
   const createSeriesMutation = trpc.series.create.useMutation();
@@ -63,7 +64,6 @@ export default function Admin() {
   const createEpisodeMutation = trpc.episodes.create.useMutation();
   const updateEpisodeMutation = trpc.episodes.update.useMutation();
   const deleteEpisodeMutation = trpc.episodes.delete.useMutation();
-  const uploadVideoMutation = trpc.videos.upload.useMutation();
 
   // ==================== نماذج ====================
 
@@ -80,9 +80,6 @@ export default function Admin() {
     thumbnailUrl: "",
     videoUrl: "",
   });
-
-  const [isUploading, setIsUploading] = useState(false);
-  const { success: notifySuccess, error: notifyError } = useNotifications();
 
   // ==================== معالجات المسلسلات ====================
 
@@ -195,7 +192,7 @@ export default function Admin() {
   };
 
   const handleUploadVideo = async (episodeId: number) => {
-    setLocation(`/upload-video/${episodeId}`);
+    navigate(`/upload-video/${episodeId}`);
   };
 
   return (
@@ -208,7 +205,7 @@ export default function Admin() {
             onClick={() => {
               sessionStorage.removeItem("adminCodeVerified");
               setIsCodeVerified(false);
-              setLocation("/");
+              navigate("/");
             }}
           >
             تسجيل خروج

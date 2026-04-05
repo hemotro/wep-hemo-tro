@@ -115,3 +115,5 @@
 - [x] Store code verification in session
 - [x] Create API endpoint to verify admin code
 - [x] Write and pass unit tests for admin code verification
+- [x] Fix React error #310 (duplicate useLocation import)
+- [x] Fix queries to only run after code verification
