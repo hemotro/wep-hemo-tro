@@ -7,8 +7,10 @@ const JWT_EXPIRY = "7d";
 
 export interface SessionPayload {
   userId: number;
+  id?: number;
   email: string;
   name: string;
+  role?: string;
 }
 
 class SDK {
@@ -16,7 +18,11 @@ class SDK {
    * إنشاء JWT token للجلسة
    */
   createSessionToken(payload: SessionPayload): string {
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });
+    const payloadWithId = {
+      ...payload,
+      id: payload.id || payload.userId,
+    };
+    return jwt.sign(payloadWithId, JWT_SECRET, { expiresIn: JWT_EXPIRY });
   }
 
   /**

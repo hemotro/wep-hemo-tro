@@ -68,6 +68,8 @@
 - [x] Verify password reset token generation and validation
 - [x] Fix 404 error on reset-password page (update wouter route pattern)
 - [x] Test password reset flow with real tokens
+- [ ] Add admin secret code protection to admin panel
+- [ ] Make admin panel accessible to everyone with secret code
 
 ## Phase 9: Password Reset with OTP Code System ✅
 - [x] Update database schema to store OTP codes instead of tokens
@@ -77,3 +79,37 @@
 - [x] Implement OTP verification endpoint
 - [x] Add OTP expiration (10 minutes)
 - [x] Test OTP-based password reset flow
+
+## Phase 10: Admin Account Setup
+- [ ] Create admin account for hemotrotv@gmail.com
+- [ ] Set role to admin in database
+- [ ] Test admin panel visibility
+- [ ] Verify admin functionality
+
+## Phase 11: Video Processing System with Google Cloud & FFmpeg
+- [ ] Set up Google Cloud Storage integration
+- [ ] Configure authentication and credentials
+- [ ] Add FFmpeg.wasm library for video processing
+- [ ] Create video upload interface
+- [ ] Implement automatic video transcoding (1080p, 720p, 480p)
+- [ ] Update episode schema to store multiple quality URLs
+- [ ] Create multi-quality video player
+- [ ] Test video upload and processing
+- [ ] Verify quality selection in player
+
+## Phase 12: Multi-Quality Video Upload System (Manus S3)
+- [x] Update video upload API endpoint to use Manus S3
+- [x] Implement FFmpeg.wasm video processing for multiple qualities
+- [x] Create video upload page with progress tracking
+- [ ] Test video upload and S3 storage
+- [ ] Update video player for quality selection
+- [ ] Test complete video upload and playback workflow
+- [ ] Add 360p quality support
+
+## Phase 13: Admin Panel Secret Code Protection
+- [x] Remove role-based access check from Admin.tsx
+- [x] Add secret code input modal (hemohemo@12)
+- [x] Verify code before showing admin panel
+- [x] Store code verification in session
+- [x] Create API endpoint to verify admin code
+- [x] Write and pass unit tests for admin code verification

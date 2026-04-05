@@ -77,11 +77,7 @@ export default function Account() {
 
             <div>
               <p className="text-sm text-muted-foreground mb-1">طريقة التسجيل</p>
-              <p className="text-foreground font-semibold">
-                {user.loginMethod === "email" && "البريد الإلكتروني"}
-                {user.loginMethod === "google" && "Google"}
-                {user.loginMethod === "manus" && "Manus"}
-              </p>
+              <p className="text-foreground font-semibold">البريد الإلكتروني</p>
             </div>
           </CardContent>
         </Card>

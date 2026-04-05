@@ -76,6 +76,7 @@ export const appRouter = router({
             userId: user.id,
             email: user.email || '',
             name: user.name || '',
+            role: user.role || 'user',
           });
           
           // حفظ الجلسة في الـ cookie
@@ -87,6 +88,7 @@ export const appRouter = router({
               id: user.id,
               name: user.name,
               email: user.email,
+              role: user.role,
             }
           };
         } catch (error: any) {
@@ -218,6 +220,26 @@ export const appRouter = router({
             message: error.message || "فشل تحديث كلمة السر",
           });
         }
+      }),
+
+    verifyAdminCode: publicProcedure
+      .input(z.object({
+        code: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const ADMIN_SECRET_CODE = "hemohemo@12";
+        
+        if (input.code !== ADMIN_SECRET_CODE) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "الرمز السري غير صحيح",
+          });
+        }
+
+        return {
+          success: true,
+          message: "تم التحقق من الرمز بنجاح",
+        };
       }),
   }),
 
@@ -408,7 +430,7 @@ export const appRouter = router({
       .input(z.object({ seriesId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         try {
-          await addFavorite(ctx.user.id, input.seriesId);
+          await addFavorite(ctx.user.userId, input.seriesId);
           return { success: true, message: "تمت إضافة المسلسل إلى المفضلة" };
         } catch (error: any) {
           throw new TRPCError({
@@ -422,7 +444,7 @@ export const appRouter = router({
       .input(z.object({ seriesId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         try {
-          await removeFavorite(ctx.user.id, input.seriesId);
+          await removeFavorite(ctx.user.userId, input.seriesId);
           return { success: true, message: "تمت إزالة المسلسل من المفضلة" };
         } catch (error: any) {
           throw new TRPCError({
@@ -435,7 +457,7 @@ export const appRouter = router({
     getAll: protectedProcedure
       .query(async ({ ctx }) => {
         try {
-          const favorites = await getUserFavorites(ctx.user.id);
+          const favorites = await getUserFavorites(ctx.user.userId);
           return favorites;
         } catch (error: any) {
           throw new TRPCError({
@@ -449,7 +471,7 @@ export const appRouter = router({
       .input(z.object({ seriesId: z.number() }))
       .query(async ({ input, ctx }) => {
         try {
-          const result = await isFavorite(ctx.user.id, input.seriesId);
+          const result = await isFavorite(ctx.user.userId, input.seriesId);
           return result;
         } catch (error: any) {
           throw new TRPCError({
@@ -751,7 +773,7 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         try {
           await saveWatchHistory(
-            ctx.user!.id,
+            ctx.user!.userId,
             input.episodeId,
             input.seriesId,
             input.currentTime,
@@ -770,7 +792,7 @@ export const appRouter = router({
       .input(z.object({ episodeId: z.number() }))
       .query(async ({ input, ctx }) => {
         try {
-          const history = await getWatchHistory(ctx.user!.id, input.episodeId);
+          const history = await getWatchHistory(ctx.user!.userId, input.episodeId);
           return history;
         } catch (error: any) {
           throw new TRPCError({
@@ -784,7 +806,7 @@ export const appRouter = router({
       .input(z.object({ seriesId: z.number() }))
       .query(async ({ input, ctx }) => {
         try {
-          const history = await getUserSeriesWatchHistory(ctx.user!.id, input.seriesId);
+          const history = await getUserSeriesWatchHistory(ctx.user!.userId, input.seriesId);
           return history;
         } catch (error: any) {
           throw new TRPCError({
@@ -911,3 +933,5 @@ export const appRouter = router({
   }),
 });
 export type AppRouter = typeof appRouter;
+
+export const ADMIN_SECRET_CODE = "hemohemo@12";
