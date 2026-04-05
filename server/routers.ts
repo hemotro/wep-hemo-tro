@@ -391,7 +391,10 @@ export const appRouter = router({
         title: z.string().optional(),
         descriptionAr: z.string().optional(),
         description: z.string().optional(),
-        videoUrl: z.string().url().optional(),
+        videoUrl: z.string().optional(),
+        video1080pUrl: z.string().optional(),
+        video720pUrl: z.string().optional(),
+        video480pUrl: z.string().optional(),
         thumbnailUrl: z.string().optional(),
         duration: z.number().optional(),
       }))

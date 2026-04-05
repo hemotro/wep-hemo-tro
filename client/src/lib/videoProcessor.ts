@@ -46,6 +46,7 @@ export async function processVideo(
   video1080p: Blob;
   video720p: Blob;
   video480p: Blob;
+  video360p: Blob;
 }> {
   const ff = await initFFmpeg();
 
@@ -57,6 +58,7 @@ export async function processVideo(
   const output1080p = `output_1080p_${Date.now()}.mp4`;
   const output720p = `output_720p_${Date.now()}.mp4`;
   const output480p = `output_480p_${Date.now()}.mp4`;
+  const output360p = `output_360p_${Date.now()}.mp4`;
 
   try {
     // كتابة الملف المدخل
@@ -125,26 +127,51 @@ export async function processVideo(
     ]);
     onProgress?.("480p", 100);
 
+    // معالجة 360p
+    onProgress?.("360p", 0);
+    await ff.exec([
+      "-i",
+      inputName,
+      "-c:v",
+      "libx264",
+      "-preset",
+      "fast",
+      "-crf",
+      "28",
+      "-s",
+      "640x360",
+      "-c:a",
+      "aac",
+      "-b:a",
+      "32k",
+      output360p,
+    ]);
+    onProgress?.("360p", 100);
+
     // قراءة الملفات المعالجة
     const video1080pData = (await ff.readFile(output1080p)) as Uint8Array;
     const video720pData = (await ff.readFile(output720p)) as Uint8Array;
     const video480pData = (await ff.readFile(output480p)) as Uint8Array;
+    const video360pData = (await ff.readFile(output360p)) as Uint8Array;
 
     // تحويل إلى Blob
     const video1080p = new Blob([new Uint8Array(video1080pData)], { type: "video/mp4" });
     const video720p = new Blob([new Uint8Array(video720pData)], { type: "video/mp4" });
     const video480p = new Blob([new Uint8Array(video480pData)], { type: "video/mp4" });
+    const video360p = new Blob([new Uint8Array(video360pData)], { type: "video/mp4" });
 
     // حذف الملفات المؤقتة
     await ff.deleteFile(inputName);
     await ff.deleteFile(output1080p);
     await ff.deleteFile(output720p);
     await ff.deleteFile(output480p);
+    await ff.deleteFile(output360p);
 
     return {
       video1080p,
       video720p,
       video480p,
+      video360p,
     };
   } catch (error) {
     console.error("Error processing video:", error);

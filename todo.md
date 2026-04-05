@@ -101,10 +101,12 @@
 - [x] Update video upload API endpoint to use Manus S3
 - [x] Implement FFmpeg.wasm video processing for multiple qualities
 - [x] Create video upload page with progress tracking
+- [x] Add 360p quality support
+- [x] Update episodes.update API to support quality URLs
+- [x] Write and pass 9 unit tests for video processor
 - [ ] Test video upload and S3 storage
 - [ ] Update video player for quality selection
 - [ ] Test complete video upload and playback workflow
-- [ ] Add 360p quality support
 
 ## Phase 13: Admin Panel Secret Code Protection
 - [x] Remove role-based access check from Admin.tsx
