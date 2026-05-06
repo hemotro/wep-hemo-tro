@@ -6,56 +6,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Plus, Trash2, Play, AlertCircle, Edit2, Link as LinkIcon } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { AdminCodeModal } from "@/components/AdminCodeModal";
 
-export default function Admin() {
+// مكون داخلي يحتوي على كل الـ hooks
+function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [, navigate] = useLocation();
   const [selectedSeries, setSelectedSeries] = useState<number | null>(null);
   const [showSeriesForm, setShowSeriesForm] = useState(false);
   const [showEpisodeForm, setShowEpisodeForm] = useState(false);
   const [editingSeriesId, setEditingSeriesId] = useState<number | null>(null);
-  const [showCodeModal, setShowCodeModal] = useState(false);
-  const [isCodeVerified, setIsCodeVerified] = useState(false);
 
-  // فحص التحقق من الرمز عند تحميل الصفحة
-  useEffect(() => {
-    const verified = sessionStorage.getItem("adminCodeVerified");
-    if (verified === "true") {
-      setIsCodeVerified(true);
-    } else {
-      setShowCodeModal(true);
-    }
-  }, []);
-
-  const handleCodeSuccess = () => {
-    setIsCodeVerified(true);
-    setShowCodeModal(false);
-    sessionStorage.setItem("adminCodeVerified", "true");
-    toast.success("تم الدخول إلى لوحة التحكم!");
-  };
-
-  // إذا لم يتم التحقق من الرمز، عرض النموذج فقط
-  if (!isCodeVerified) {
-    return (
-      <>
-        <AdminCodeModal
-          isOpen={showCodeModal}
-          onClose={() => navigate("/")}
-          onSuccess={handleCodeSuccess}
-        />
-      </>
-    );
-  }
-
-  // Queries و Mutations - يتم استدعاؤها بعد التحقق من الرمز فقط
-  const { data: seriesList, refetch: refetchSeries, isLoading: seriesLoading } = trpc.series.list.useQuery(
-    undefined,
-    { enabled: isCodeVerified }
-  );
+  // جميع الـ queries و mutations يتم استدعاؤها هنا دائماً
+  const { data: seriesList, refetch: refetchSeries, isLoading: seriesLoading } = trpc.series.list.useQuery();
   const { data: episodes, refetch: refetchEpisodes } = trpc.series.getEpisodes.useQuery(
     { seriesId: selectedSeries || 0 },
-    { enabled: isCodeVerified && !!selectedSeries }
+    { enabled: !!selectedSeries }
   );
 
   const createSeriesMutation = trpc.series.create.useMutation();
@@ -202,11 +168,7 @@ export default function Admin() {
           <h1 className="text-3xl font-bold">لوحة التحكم الإدارية</h1>
           <Button
             variant="outline"
-            onClick={() => {
-              sessionStorage.removeItem("adminCodeVerified");
-              setIsCodeVerified(false);
-              navigate("/");
-            }}
+            onClick={onLogout}
           >
             تسجيل خروج
           </Button>
@@ -459,4 +421,44 @@ export default function Admin() {
       </div>
     </div>
   );
+}
+
+// المكون الرئيسي - يعمل كـ gate للتحقق من الرمز
+export default function Admin() {
+  const [, navigate] = useLocation();
+  const [showCodeModal, setShowCodeModal] = useState(false);
+  const [isCodeVerified, setIsCodeVerified] = useState(false);
+
+  // فحص التحقق من الرمز عند تحميل الصفحة
+  if (!isCodeVerified && !showCodeModal) {
+    setShowCodeModal(true);
+  }
+
+  const handleCodeSuccess = () => {
+    setIsCodeVerified(true);
+    setShowCodeModal(false);
+    sessionStorage.setItem("adminCodeVerified", "true");
+    toast.success("تم الدخول إلى لوحة التحكم!");
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("adminCodeVerified");
+    setIsCodeVerified(false);
+    setShowCodeModal(true);
+    navigate("/");
+  };
+
+  // إذا لم يتم التحقق من الرمز، عرض النموذج فقط
+  if (!isCodeVerified) {
+    return (
+      <AdminCodeModal
+        isOpen={showCodeModal}
+        onClose={() => navigate("/")}
+        onSuccess={handleCodeSuccess}
+      />
+    );
+  }
+
+  // إذا تم التحقق، عرض لوحة التحكم
+  return <AdminPanel onLogout={handleLogout} />;
 }
