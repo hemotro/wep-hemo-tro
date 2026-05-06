@@ -129,3 +129,6 @@
 - [x] Create VideoUploadModal component
 - [x] Write and pass 12 unit tests for video upload
 - [ ] Test local file upload workflow end-to-end
+
+## Phase 15: UI Polish & Refinements
+- [x] Remove border line from header when scrolling up/down
