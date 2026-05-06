@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Plus, Trash2, Play, AlertCircle, Edit2, Link as LinkIcon } from "lucide-react";
+import { Plus, Trash2, Upload, AlertCircle, Edit2, Link as LinkIcon } from "lucide-react";
 import { useState } from "react";
 import { AdminCodeModal } from "@/components/AdminCodeModal";
+import { VideoUploadModal } from "@/components/VideoUploadModal";
 
 // مكون داخلي يحتوي على كل الـ hooks
 function AdminPanel({ onLogout }: { onLogout: () => void }) {
@@ -16,6 +17,8 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [showSeriesForm, setShowSeriesForm] = useState(false);
   const [showEpisodeForm, setShowEpisodeForm] = useState(false);
   const [editingSeriesId, setEditingSeriesId] = useState<number | null>(null);
+  const [showVideoUploadModal, setShowVideoUploadModal] = useState(false);
+  const [selectedEpisodeForUpload, setSelectedEpisodeForUpload] = useState<number | null>(null);
 
   // جميع الـ queries و mutations يتم استدعاؤها هنا دائماً
   const { data: seriesList, refetch: refetchSeries, isLoading: seriesLoading } = trpc.series.list.useQuery();
@@ -158,7 +161,8 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   };
 
   const handleUploadVideo = async (episodeId: number) => {
-    navigate(`/upload-video/${episodeId}`);
+    setSelectedEpisodeForUpload(episodeId);
+    setShowVideoUploadModal(true);
   };
 
   return (
@@ -398,8 +402,8 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                               onClick={() => handleUploadVideo(episode.id)}
                               className="gap-2"
                             >
-                              <Play className="w-4 h-4" />
-                              رفع فيديو
+                              <Upload className="w-4 h-4" />
+                              رفع من الجهاز
                             </Button>
                             <Button
                               size="sm"
@@ -418,6 +422,21 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* نموذج تحميل الفيديو */}
+        <VideoUploadModal
+          isOpen={showVideoUploadModal}
+          onClose={() => {
+            setShowVideoUploadModal(false);
+            setSelectedEpisodeForUpload(null);
+          }}
+          episodeId={selectedEpisodeForUpload || 0}
+          onSuccess={() => {
+            refetchEpisodes();
+            setShowVideoUploadModal(false);
+            setSelectedEpisodeForUpload(null);
+          }}
+        />
       </div>
     </div>
   );

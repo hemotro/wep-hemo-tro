@@ -117,3 +117,15 @@
 - [x] Write and pass unit tests for admin code verification
 - [x] Fix React error #310 (duplicate useLocation import)
 - [x] Fix queries to only run after code verification
+
+## Phase 14: Local Video Upload from Device
+- [x] Add file input button in Admin panel for episode video upload
+- [x] Create video upload handler with drag-and-drop support
+- [x] Add progress bar for upload and processing
+- [x] Upload videos to S3 automatically
+- [x] Save video URLs to episode database
+- [x] Add file size validation (2GB max)
+- [x] Add supported format validation (mp4, mkv, avi, mov)
+- [x] Create VideoUploadModal component
+- [x] Write and pass 12 unit tests for video upload
+- [ ] Test local file upload workflow end-to-end
