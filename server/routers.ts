@@ -241,6 +241,73 @@ export const appRouter = router({
           message: "تم التحقق من الرمز بنجاح",
         };
       }),
+
+    sendEmailVerification: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const code = Math.floor(100000 + Math.random() * 900000).toString();
+          (global as any).emailVerificationCodes = (global as any).emailVerificationCodes || {};
+          (global as any).emailVerificationCodes[input.email] = {
+            code,
+            expiresAt: Date.now() + 10 * 60 * 1000,
+          };
+          
+          try {
+            await sendPasswordResetEmail(input.email, code, 'المستخدم');
+          } catch (emailError) {
+            console.error('Email error:', emailError);
+          }
+          
+          return {
+            success: true,
+            message: 'تم إرسال كود التحقق إلى بريدك الإلكتروني',
+          };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: error.message || 'فشل إرسال كود التحقق',
+          });
+        }
+      }),
+
+    verifyEmail: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        code: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const verificationData = (global as any).emailVerificationCodes?.[input.email];
+          
+          if (!verificationData) {
+            throw new Error('لم يتم طلب كود تحقق لهذا البريد الإلكتروني');
+          }
+          
+          if (verificationData.expiresAt < Date.now()) {
+            delete (global as any).emailVerificationCodes[input.email];
+            throw new Error('انتهت صلاحية الكود');
+          }
+          
+          if (verificationData.code !== input.code) {
+            throw new Error('الكود غير صحيح');
+          }
+          
+          delete (global as any).emailVerificationCodes[input.email];
+          
+          return {
+            success: true,
+            message: 'تم التحقق من البريد الإلكتروني بنجاح',
+          };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: error.message || 'فشل التحقق من الكود',
+          });
+        }
+      })
   }),
 
   series: router({

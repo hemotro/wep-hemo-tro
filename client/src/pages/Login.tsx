@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Mail, Lock } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import EmailVerification from "@/components/EmailVerification";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -18,6 +19,8 @@ export default function Login() {
   const [error, setError] = useState("");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState("");
 
   const registerMutation = trpc.auth.register.useMutation();
   const loginMutation = trpc.auth.loginEmail.useMutation();
@@ -38,7 +41,9 @@ export default function Login() {
         { email, password, name },
         {
           onSuccess: () => {
-            toast.success("تم إنشاء الحساب بنجاح! يرجى تسجيل الدخول");
+            toast.success("تم إنشاء الحساب بنجاح! يرجى التحقق من بريدك الإلكتروني");
+            setNewUserEmail(email);
+            setShowEmailVerification(true);
             setIsSignUp(false);
             setName("");
             setEmail("");
@@ -284,6 +289,22 @@ export default function Login() {
           )}
         </CardContent>
       </Card>
+
+      {showEmailVerification && (
+        <EmailVerification
+          email={newUserEmail}
+          onVerified={() => {
+            setShowEmailVerification(false);
+            setNewUserEmail("");
+            toast.success("تم تفعيل حسابك بنجاح! يمكنك الآن تسجيل الدخول");
+            setLocation("/login");
+          }}
+          onCancel={() => {
+            setShowEmailVerification(false);
+            setNewUserEmail("");
+          }}
+        />
+      )}
     </div>
   );
 }

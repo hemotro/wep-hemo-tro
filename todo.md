@@ -132,3 +132,13 @@
 
 ## Phase 15: UI Polish & Refinements
 - [x] Remove border line from header when scrolling up/down
+
+## Phase 16: Bug Fixes & Email Verification
+- [x] Fix duplicate email input field in password recovery page
+- [x] Add email verification step when creating new account
+- [x] Create email verification modal/page
+- [x] Generate verification code and send to email
+- [x] Verify code before account activation
+- [x] Add API endpoints for email verification
+- [x] Integrate EmailVerification component in Login page
+- [ ] Test email verification flow end-to-end

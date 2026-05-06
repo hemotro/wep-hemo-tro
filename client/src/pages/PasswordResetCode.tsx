@@ -133,6 +133,10 @@ export default function PasswordResetCode() {
 
           {step === 'code' && (
             <form onSubmit={handleUpdatePassword} className="space-y-4">
+              <div className="bg-slate-700/30 p-3 rounded-lg mb-4">
+                <p className="text-sm text-slate-300">البريد الإلكتروني: <span className="font-medium text-blue-400">{email}</span></p>
+              </div>
+              
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
                   الكود الرقمي
