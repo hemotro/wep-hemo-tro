@@ -21,6 +21,7 @@ import {
 import { sendPasswordResetEmail } from "./_core/email";
 import { storagePut } from "./storage";
 import { TRPCError } from "@trpc/server";
+import { imageRouter } from "./image-upload.router";
 
 // إنشاء adminProcedure للعمليات الإدارية فقط
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -32,6 +33,7 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 
 export const appRouter = router({
   system: systemRouter,
+  images: imageRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     

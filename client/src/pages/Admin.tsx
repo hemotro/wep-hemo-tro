@@ -184,6 +184,18 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
             <TabsTrigger value="episodes">الحلقات</TabsTrigger>
             <TabsTrigger value="images">إدارة الصور</TabsTrigger>
           </TabsList>
+          
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-900">
+              للوصول إلى الواجهة المتقدمة لإدارة الصور مع رفع مباشر ومعاينة حية:
+              <button 
+                onClick={() => navigate('/admin-images')}
+                className="text-blue-600 hover:text-blue-800 underline font-semibold mr-2"
+              >
+                انقر هنا
+              </button>
+            </p>
+          </div>
 
           {/* تبويب المسلسلات */}
           <TabsContent value="series" className="space-y-4">

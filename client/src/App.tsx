@@ -12,6 +12,7 @@ import SeriesDetail from "./pages/SeriesDetail";
 import EpisodePlayer from "./pages/EpisodePlayer";
 import Login from "./pages/Login";
 import Admin from "./pages/Admin";
+import AdminSeriesImages from "./pages/AdminSeriesImages";
 import ResetPassword from "./pages/ResetPassword";
 import PasswordResetCode from "./pages/PasswordResetCode";
 import BottomNav from "./components/BottomNav";
@@ -30,6 +31,7 @@ function Router() {
       <Route path={"/search"} component={Search} />
       <Route path={"/account"} component={Account} />
       <Route path={"/admin"} component={Admin} />
+      <Route path={"/admin-images"} component={AdminSeriesImages} />
       <Route path={"/series/:id"} component={SeriesDetail} />
       <Route path={"/episode/:seriesId/:episodeNumber"} component={EpisodePlayer} />
       <Route path={"/404"} component={NotFound} />
