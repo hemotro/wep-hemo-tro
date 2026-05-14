@@ -179,9 +179,10 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
         </div>
 
         <Tabs defaultValue="series" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="series">المسلسلات</TabsTrigger>
             <TabsTrigger value="episodes">الحلقات</TabsTrigger>
+            <TabsTrigger value="images">إدارة الصور</TabsTrigger>
           </TabsList>
 
           {/* تبويب المسلسلات */}
@@ -420,6 +421,77 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                 </>
               )}
             </div>
+          </TabsContent>
+
+          {/* تبويب إدارة الصور */}
+          <TabsContent value="images" className="space-y-4">
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">إدارة صور المسلسلات</h2>
+              <p className="text-muted-foreground mb-6">تغيير وحذف صور السلايدر والمسلسلات</p>
+            </div>
+
+            {seriesLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">جاري تحميل المسلسلات...</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {seriesList?.map((series: any) => (
+                  <Card key={series.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                    <div className="relative aspect-video bg-muted overflow-hidden">
+                      {series.posterUrl ? (
+                        <img
+                          src={series.posterUrl}
+                          alt={series.titleAr}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-background">
+                          <p className="text-muted-foreground">بدون صورة</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <CardContent className="p-4 space-y-3">
+                      <div>
+                        <h3 className="font-semibold text-foreground line-clamp-2">
+                          {series.titleAr}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {series.totalEpisodes} حلقة
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Button
+                          onClick={() => handleEditSeries(series)}
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                        >
+                          <Edit2 className="w-4 h-4 mr-2" />
+                          تغيير الصورة
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            if (confirm("هل أنت متأكد من حذف الصورة؟")) {
+                              handleDeleteSeries(series.id);
+                            }
+                          }}
+                          variant="destructive"
+                          size="sm"
+                          className="w-full"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          حذف الصورة
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 

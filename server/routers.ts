@@ -410,6 +410,45 @@ export const appRouter = router({
           });
         }
       }),
+
+    // تحديث صورة المسلسل (السلايدر)
+    updatePoster: adminProcedure
+      .input(z.object({
+        seriesId: z.number(),
+        posterUrl: z.string().url("رابط الصورة غير صحيح"),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const result = await updateSeries(input.seriesId, {
+            posterUrl: input.posterUrl,
+          });
+          return { success: true, data: result, message: "تم تحديث صورة المسلسل بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message || "فشل تحديث صورة المسلسل",
+          });
+        }
+      }),
+
+    // حذف صورة المسلسل
+    deleteImage: adminProcedure
+      .input(z.object({
+        seriesId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const result = await updateSeries(input.seriesId, {
+            posterUrl: null,
+          });
+          return { success: true, message: "تم حذف صورة المسلسل بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message || "فشل حذف صورة المسلسل",
+          });
+        }
+      }),
   }),
 
   episodes: router({
