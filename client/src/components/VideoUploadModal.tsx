@@ -88,13 +88,14 @@ export function VideoUploadModal({ isOpen, onClose, episodeId, onSuccess }: Vide
 
       reader.onload = async (e) => {
         try {
-          setProcessingStatus("جاري معالجة الفيديو...");
-          setUploadProgress(60);
+          setProcessingStatus("جاري رفع الفيديو على الخادم...");
+          setUploadProgress(10);
 
           const arrayBuffer = e.target?.result as ArrayBuffer;
           const uint8Array = new Uint8Array(arrayBuffer);
 
           // إرسال الملف للخادم
+          setUploadProgress(30);
           const result = await uploadVideoMutation.mutateAsync({
             episodeId,
             fileName: selectedFile.name,
@@ -104,6 +105,12 @@ export function VideoUploadModal({ isOpen, onClose, episodeId, onSuccess }: Vide
             duration: Math.floor(selectedFile.size / 1024 / 1024 * 60), // تقدير تقريبي,
           });
 
+          setUploadProgress(90);
+          setProcessingStatus("جاري تعيين الفيديو على الحلقة...");
+          
+          // انتظر قليلاً للانتهاء
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
           setUploadProgress(100);
           setProcessingStatus("تم رفع الفيديو بنجاح!");
           toast.success("تم رفع الفيديو وحفظه بنجاح!");
