@@ -1,12 +1,12 @@
-import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Plus, Trash2, Upload, AlertCircle, Edit2, Link as LinkIcon } from "lucide-react";
+import { Plus, Trash2, Upload, AlertCircle, Edit2, Link as LinkIcon, Play } from "lucide-react";
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { AdminCodeModal } from "@/components/AdminCodeModal";
 import { VideoUploadModal } from "@/components/VideoUploadModal";
 
@@ -377,14 +377,34 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium mb-1">رابط الفيديو</label>
-                            <Input
-                              value={episodeForm.videoUrl}
-                              onChange={(e) =>
-                                setEpisodeForm({ ...episodeForm, videoUrl: e.target.value })
-                              }
-                              placeholder="أدخل رابط الفيديو"
-                            />
+                            <label className="block text-sm font-medium mb-1">الفيديو</label>
+                            {episodeForm.videoUrl ? (
+                              <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                <Play className="w-4 h-4 text-green-600" />
+                                <span className="text-sm text-green-700 flex-1 truncate">تم تحميل الفيديو</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setEpisodeForm({ ...episodeForm, videoUrl: "" })}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => {
+                                  setSelectedEpisodeForUpload(parseInt(episodeForm.episodeNumber) || 0);
+                                  setShowVideoUploadModal(true);
+                                }}
+                              >
+                                <Upload className="w-4 h-4 mr-2" />
+                                تحميل فيديو
+                              </Button>
+                            )}
                           </div>
                           <Button type="submit" className="w-full">
                             إضافة الحلقة
@@ -515,7 +535,8 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
             setSelectedEpisodeForUpload(null);
           }}
           episodeId={selectedEpisodeForUpload || 0}
-          onSuccess={() => {
+          onSuccess={(videoUrl) => {
+            setEpisodeForm({ ...episodeForm, videoUrl });
             refetchEpisodes();
             setShowVideoUploadModal(false);
             setSelectedEpisodeForUpload(null);

@@ -9,7 +9,7 @@ interface VideoUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   episodeId: number;
-  onSuccess: () => void;
+  onSuccess: (videoUrl: string) => void;
 }
 
 export function VideoUploadModal({ isOpen, onClose, episodeId, onSuccess }: VideoUploadModalProps) {
@@ -95,13 +95,13 @@ export function VideoUploadModal({ isOpen, onClose, episodeId, onSuccess }: Vide
           const uint8Array = new Uint8Array(arrayBuffer);
 
           // إرسال الملف للخادم
-          await uploadVideoMutation.mutateAsync({
+          const result = await uploadVideoMutation.mutateAsync({
             episodeId,
             fileName: selectedFile.name,
             fileBuffer: uint8Array as any,
             fileSize: selectedFile.size,
             mimeType: selectedFile.type,
-            duration: Math.floor(selectedFile.size / 1024 / 1024 * 60), // تقدير تقريبي
+            duration: Math.floor(selectedFile.size / 1024 / 1024 * 60), // تقدير تقريبي,
           });
 
           setUploadProgress(100);
@@ -114,7 +114,7 @@ export function VideoUploadModal({ isOpen, onClose, episodeId, onSuccess }: Vide
             setProcessingStatus("");
             setIsUploading(false);
             setVideoPreview(null);
-            onSuccess();
+            onSuccess(result.url);
             onClose();
           }, 1500);
         } catch (error: any) {
