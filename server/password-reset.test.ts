@@ -57,6 +57,7 @@ describe("Password Reset System", () => {
     await db.insert(passwordResetTokens).values({
       userId: testUserId,
       token,
+      code: "123456",
       expiresAt,
       used: false,
     });
@@ -79,6 +80,7 @@ describe("Password Reset System", () => {
     await db.insert(passwordResetTokens).values({
       userId: testUserId,
       token,
+      code: "123456",
       expiresAt,
       used: false,
     });
@@ -100,6 +102,7 @@ describe("Password Reset System", () => {
     await db.insert(passwordResetTokens).values({
       userId: testUserId,
       token,
+      code: "123456",
       expiresAt,
       used: false,
     });
@@ -121,6 +124,7 @@ describe("Password Reset System", () => {
     await db.insert(passwordResetTokens).values({
       userId: testUserId,
       token,
+      code: "123456",
       expiresAt,
       used: false,
     });

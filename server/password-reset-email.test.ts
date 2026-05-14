@@ -60,6 +60,7 @@ describe("Password Reset Email System", () => {
     await db.insert(passwordResetTokens).values({
       userId: testUserId,
       token: resetToken,
+      code: "123456",
       expiresAt,
       used: false,
     });
@@ -117,6 +118,7 @@ describe("Password Reset Email System", () => {
     await db.insert(passwordResetTokens).values({
       userId: testUserId,
       token: verifyToken,
+      code: "123456",
       expiresAt,
       used: false,
     });
@@ -140,6 +142,7 @@ describe("Password Reset Email System", () => {
     await db.insert(passwordResetTokens).values({
       userId: testUserId,
       token: reuseToken,
+      code: "123456",
       expiresAt,
       used: false,
     });
@@ -165,6 +168,7 @@ describe("Password Reset Email System", () => {
     await db.insert(passwordResetTokens).values({
       userId: testUserId,
       token: expiredToken,
+      code: "123456",
       expiresAt,
       used: false,
     });

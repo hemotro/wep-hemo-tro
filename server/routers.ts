@@ -805,7 +805,7 @@ export const appRouter = router({
       .input(z.object({
         episodeId: z.number(),
         fileName: z.string(),
-        fileBuffer: z.instanceof(Buffer),
+        fileBuffer: z.any(), // قبول Uint8Array أو Buffer
         fileSize: z.number(),
         mimeType: z.string(),
         duration: z.number().optional(),
@@ -814,7 +814,11 @@ export const appRouter = router({
         try {
           // رفع الملف إلى S3
           const fileKey = `videos/episode-${input.episodeId}-${Date.now()}-${input.fileName}`;
-          const { url } = await storagePut(fileKey, input.fileBuffer, input.mimeType);
+          // تحويل Uint8Array إلى Buffer إذا لزم الأمر
+          const buffer = Buffer.isBuffer(input.fileBuffer) 
+            ? input.fileBuffer 
+            : Buffer.from(input.fileBuffer);
+          const { url } = await storagePut(fileKey, buffer, input.mimeType);
 
           // حفظ معلومات الفيديو في قاعدة البيانات
           await createUploadedVideo({

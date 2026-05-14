@@ -1,9 +1,9 @@
-import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Upload, X, Play } from "lucide-react";
+import { Upload, X, Play, AlertCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { useState, useRef } from "react";
 
 interface VideoUploadModalProps {
   isOpen: boolean;
@@ -17,6 +17,8 @@ export function VideoUploadModal({ isOpen, onClose, episodeId, onSuccess }: Vide
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [processingStatus, setProcessingStatus] = useState("");
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadVideoMutation = trpc.videos.upload.useMutation();
@@ -26,34 +28,38 @@ export function VideoUploadModal({ isOpen, onClose, episodeId, onSuccess }: Vide
     if (!file) return;
 
     // التحقق من نوع الملف
-    const validTypes = ["video/mp4", "video/x-matroska", "video/x-msvideo", "video/quicktime"];
+    const validTypes = ["video/mp4", "video/x-matroska", "video/x-msvideo", "video/quicktime", "video/mpeg"];
     if (!validTypes.includes(file.type)) {
       toast.error("صيغة الفيديو غير مدعومة. استخدم: MP4, MKV, AVI, MOV");
       return;
     }
 
-    // التحقق من حجم الملف (أقصى 2GB)
-    const maxSize = 2 * 1024 * 1024 * 1024;
+    // التحقق من حجم الملف (أقصى 500MB)
+    const maxSize = 500 * 1024 * 1024;
     if (file.size > maxSize) {
-      toast.error("حجم الملف كبير جداً. الحد الأقصى 2GB");
+      toast.error(`حجم الملف كبير جداً. الحد الأقصى 500MB (حجم الملف: ${(file.size / 1024 / 1024).toFixed(2)}MB)`);
       return;
     }
 
     setSelectedFile(file);
+
+    // إنشاء معاينة الفيديو
+    const url = URL.createObjectURL(file);
+    setVideoPreview(url);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    e.currentTarget.classList.add("border-blue-500", "bg-blue-50");
+    setIsDragging(true);
   };
 
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.currentTarget.classList.remove("border-blue-500", "bg-blue-50");
+  const handleDragLeave = () => {
+    setIsDragging(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    e.currentTarget.classList.remove("border-blue-500", "bg-blue-50");
+    setIsDragging(false);
 
     const file = e.dataTransfer.files?.[0];
     if (file) {
@@ -71,31 +77,32 @@ export function VideoUploadModal({ isOpen, onClose, episodeId, onSuccess }: Vide
     setProcessingStatus("جاري تحميل الملف...");
 
     try {
-      // تحويل الملف إلى Base64
+      // قراءة الملف كـ ArrayBuffer
       const reader = new FileReader();
-      reader.onload = async (e) => {
-        const base64Data = e.target?.result as string;
+      reader.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = (event.loaded / event.total) * 50;
+          setUploadProgress(percentComplete);
+        }
+      };
 
+      reader.onload = async (e) => {
         try {
           setProcessingStatus("جاري معالجة الفيديو...");
-          setUploadProgress(30);
+          setUploadProgress(60);
 
-      // تحويل Base64 إلى Buffer
-              const binaryString = atob(base64Data.split(',')[1]);
-              const bytes = new Uint8Array(binaryString.length);
-              for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-              }
-              const buffer = Buffer.from(bytes);
+          const arrayBuffer = e.target?.result as ArrayBuffer;
+          const uint8Array = new Uint8Array(arrayBuffer);
 
-              // إرسال الملف للخادم
-              await uploadVideoMutation.mutateAsync({
-                episodeId,
-                fileName: selectedFile.name,
-                fileBuffer: buffer,
-                fileSize: selectedFile.size,
-                mimeType: selectedFile.type,
-              });
+          // إرسال الملف للخادم
+          await uploadVideoMutation.mutateAsync({
+            episodeId,
+            fileName: selectedFile.name,
+            fileBuffer: uint8Array as any,
+            fileSize: selectedFile.size,
+            mimeType: selectedFile.type,
+            duration: Math.floor(selectedFile.size / 1024 / 1024 * 60), // تقدير تقريبي
+          });
 
           setUploadProgress(100);
           setProcessingStatus("تم رفع الفيديو بنجاح!");
@@ -106,13 +113,16 @@ export function VideoUploadModal({ isOpen, onClose, episodeId, onSuccess }: Vide
             setUploadProgress(0);
             setProcessingStatus("");
             setIsUploading(false);
+            setVideoPreview(null);
             onSuccess();
             onClose();
           }, 1500);
         } catch (error: any) {
+          console.error("Upload error:", error);
           toast.error(error.message || "فشل رفع الفيديو");
           setIsUploading(false);
           setProcessingStatus("");
+          setUploadProgress(0);
         }
       };
 
@@ -120,108 +130,138 @@ export function VideoUploadModal({ isOpen, onClose, episodeId, onSuccess }: Vide
         toast.error("فشل قراءة الملف");
         setIsUploading(false);
         setProcessingStatus("");
+        setUploadProgress(0);
       };
 
-      reader.readAsDataURL(selectedFile);
+      reader.readAsArrayBuffer(selectedFile);
     } catch (error: any) {
+      console.error("Error:", error);
       toast.error(error.message || "حدث خطأ");
       setIsUploading(false);
       setProcessingStatus("");
+      setUploadProgress(0);
     }
+  };
+
+  const handleClearFile = () => {
+    setSelectedFile(null);
+    setVideoPreview(null);
+    setUploadProgress(0);
+    setProcessingStatus("");
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>تحميل فيديو الحلقة</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* تنبيه المتطلبات */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex gap-2">
+            <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-blue-900">
+              <p className="font-semibold">المتطلبات:</p>
+              <ul className="list-disc list-inside mt-1 space-y-1">
+                <li>الصيغ المدعومة: MP4, MKV, AVI, MOV</li>
+                <li>الحد الأقصى للحجم: 500MB</li>
+                <li>يُنصح بـ 1080p أو أقل للأداء الأفضل</li>
+              </ul>
+            </div>
+          </div>
+
           {/* منطقة السحب والإفلات */}
           {!selectedFile ? (
             <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 transition"
               onClick={() => fileInputRef.current?.click()}
+              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition ${
+                isDragging
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-300 hover:border-blue-500 hover:bg-gray-50"
+              }`}
             >
-              <Upload className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-              <p className="text-sm font-medium mb-1">اسحب الفيديو هنا أو انقر للاختيار</p>
-              <p className="text-xs text-gray-500">MP4, MKV, AVI, MOV (حد أقصى 2GB)</p>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="video/*"
+                accept="video/mp4,video/x-matroska,video/x-msvideo,video/quicktime,video/mpeg"
                 onChange={handleFileSelect}
                 className="hidden"
               />
+              <Upload className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+              <p className="font-semibold text-gray-900">اسحب الفيديو هنا أو انقر للاختيار</p>
+              <p className="text-sm text-gray-500 mt-1">الحد الأقصى: 500MB</p>
             </div>
           ) : (
-            <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="font-medium text-sm truncate">{selectedFile.name}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
-                  </p>
+            <div className="space-y-4">
+              {/* معاينة الفيديو */}
+              {videoPreview && (
+                <div className="relative rounded-lg overflow-hidden bg-black">
+                  <video
+                    src={videoPreview}
+                    controls
+                    className="w-full h-64 object-contain"
+                  />
                 </div>
-                {!isUploading && (
-                  <button
-                    onClick={() => setSelectedFile(null)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                )}
+              )}
+
+              {/* معلومات الملف */}
+              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-700">الملف:</span>
+                  <span className="text-sm text-gray-600">{selectedFile.name}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-700">الحجم:</span>
+                  <span className="text-sm text-gray-600">
+                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-700">النوع:</span>
+                  <span className="text-sm text-gray-600">{selectedFile.type}</span>
+                </div>
               </div>
 
+              {/* شريط التقدم */}
               {isUploading && (
-                <div className="mt-4 space-y-2">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full transition-all"
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-gray-700">{processingStatus}</span>
+                    <span className="text-sm text-gray-600">{Math.round(uploadProgress)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="bg-blue-600 h-full transition-all duration-300" 
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>
-                  <p className="text-xs text-gray-600 text-center">{processingStatus}</p>
-                  <p className="text-xs text-gray-500 text-center">{uploadProgress}%</p>
                 </div>
               )}
+
+              {/* الأزرار */}
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleUpload}
+                  disabled={isUploading}
+                  className="flex-1"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  {isUploading ? `جاري الرفع (${Math.round(uploadProgress)}%)` : "رفع الفيديو"}
+                </Button>
+                <Button
+                  onClick={handleClearFile}
+                  variant="outline"
+                  disabled={isUploading}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           )}
-
-          {/* الأزرار */}
-          <div className="flex gap-3">
-            {selectedFile && !isUploading && (
-              <Button
-                onClick={handleUpload}
-                className="flex-1 gap-2"
-              >
-                <Play className="w-4 h-4" />
-                رفع الآن
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              onClick={onClose}
-              disabled={isUploading}
-              className="flex-1"
-            >
-              {isUploading ? "جاري الرفع..." : "إلغاء"}
-            </Button>
-          </div>
-
-          {/* معلومات مفيدة */}
-          <div className="bg-blue-50 border border-blue-200 rounded p-3 text-xs text-blue-800">
-            <p className="font-medium mb-1">ملاحظات مهمة:</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>سيتم معالجة الفيديو تلقائياً إلى 4 جودات</li>
-              <li>قد تستغرق المعالجة عدة دقائق حسب حجم الملف</li>
-              <li>لا تغلق الصفحة أثناء الرفع</li>
-            </ul>
-          </div>
         </div>
       </DialogContent>
     </Dialog>
