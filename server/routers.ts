@@ -25,8 +25,9 @@ import { imageRouter } from "./image-upload.router";
 
 // إنشاء adminProcedure للعمليات الإدارية فقط
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user?.role !== 'admin') {
-    throw new TRPCError({ code: 'FORBIDDEN', message: 'ليس لديك صلاحيات إدارية' });
+  // السماح لأي مستخدم مسجل بالوصول إلى لوحة الإدارة
+  if (!ctx.user) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'يجب تسجيل الدخول أولاً' });
   }
   return next({ ctx });
 });
