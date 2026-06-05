@@ -465,6 +465,9 @@ export const appRouter = router({
         descriptionAr: z.string().optional(),
         description: z.string().optional(),
         videoUrl: z.string().url("رابط الفيديو غير صحيح"),
+        video480pUrl: z.string().optional(),
+        video720pUrl: z.string().optional(),
+        video1080pUrl: z.string().optional(),
         thumbnailUrl: z.string().optional(),
         duration: z.number().optional(),
       }))
@@ -479,6 +482,9 @@ export const appRouter = router({
             descriptionAr: input.descriptionAr,
             description: input.description,
             videoUrl: input.videoUrl,
+            video480pUrl: input.video480pUrl,
+            video720pUrl: input.video720pUrl,
+            video1080pUrl: input.video1080pUrl,
             thumbnailUrl: input.thumbnailUrl,
             duration: input.duration,
           });

@@ -2,12 +2,15 @@ import { useEffect, useRef } from 'react';
 
 interface VideoPlayerProps {
   videoUrl: string;
+  video480pUrl?: string;
+  video720pUrl?: string;
+  video1080pUrl?: string;
   isLive?: boolean;
   title?: string;
   episodeNumber?: string;
 }
 
-export default function VideoPlayer({ videoUrl, isLive = false, title, episodeNumber }: VideoPlayerProps) {
+export default function VideoPlayer({ videoUrl, video480pUrl, video720pUrl, video1080pUrl, isLive = false, title, episodeNumber }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const plyrRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);

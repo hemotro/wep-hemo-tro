@@ -48,6 +48,9 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     titleAr: "",
     thumbnailUrl: "",
     videoUrl: "",
+    video480pUrl: "",
+    video720pUrl: "",
+    video1080pUrl: "",
   });
 
   // ==================== معالجات المسلسلات ====================
@@ -133,6 +136,9 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
         titleAr: episodeForm.titleAr,
         thumbnailUrl: episodeForm.thumbnailUrl || "",
         videoUrl: episodeForm.videoUrl || "",
+        video480pUrl: episodeForm.video480pUrl || "",
+        video720pUrl: episodeForm.video720pUrl || "",
+        video1080pUrl: episodeForm.video1080pUrl || "",
       });
       toast.success("تم إضافة الحلقة بنجاح!");
       setEpisodeForm({
@@ -140,6 +146,9 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
         titleAr: "",
         thumbnailUrl: "",
         videoUrl: "",
+        video480pUrl: "",
+        video720pUrl: "",
+        video1080pUrl: "",
       });
       setShowEpisodeForm(false);
       refetchEpisodes();
@@ -377,34 +386,48 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium mb-1">الفيديو</label>
-                            {episodeForm.videoUrl ? (
-                              <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                <Play className="w-4 h-4 text-green-600" />
-                                <span className="text-sm text-green-700 flex-1 truncate">تم تحميل الفيديو</span>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setEpisodeForm({ ...episodeForm, videoUrl: "" })}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className="w-full"
-                                onClick={() => {
-                                  setSelectedEpisodeForUpload(parseInt(episodeForm.episodeNumber) || 0);
-                                  setShowVideoUploadModal(true);
-                                }}
-                              >
-                                <Upload className="w-4 h-4 mr-2" />
-                                تحميل فيديو
-                              </Button>
-                            )}
+                            <label className="block text-sm font-medium mb-1">رابط الفيديو الرئيسي</label>
+                            <Input
+                              value={episodeForm.videoUrl}
+                              onChange={(e) =>
+                                setEpisodeForm({ ...episodeForm, videoUrl: e.target.value })
+                              }
+                              placeholder="أدخل رابط الفيديو MP4"
+                              required
+                            />
+                          </div>
+                          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 space-y-3">
+                            <h3 className="font-medium text-sm text-blue-900">الجودات المتعددة (اختياري)</h3>
+                            <div>
+                              <label className="block text-sm font-medium mb-1">480p</label>
+                              <Input
+                                value={episodeForm.video480pUrl}
+                                onChange={(e) =>
+                                  setEpisodeForm({ ...episodeForm, video480pUrl: e.target.value })
+                                }
+                                placeholder="رابط الفيديو 480p"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1">720p</label>
+                              <Input
+                                value={episodeForm.video720pUrl}
+                                onChange={(e) =>
+                                  setEpisodeForm({ ...episodeForm, video720pUrl: e.target.value })
+                                }
+                                placeholder="رابط الفيديو 720p"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1">1080p</label>
+                              <Input
+                                value={episodeForm.video1080pUrl}
+                                onChange={(e) =>
+                                  setEpisodeForm({ ...episodeForm, video1080pUrl: e.target.value })
+                                }
+                                placeholder="رابط الفيديو 1080p"
+                              />
+                            </div>
                           </div>
                           <Button type="submit" className="w-full">
                             إضافة الحلقة
