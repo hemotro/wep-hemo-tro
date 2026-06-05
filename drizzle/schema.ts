@@ -243,3 +243,18 @@ export const passwordResetTokens = mysqlTable("passwordResetTokens", {
 
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+
+/**
+ * جدول السلايدر - المسلسلات المعروضة في الصفحة الرئيسية
+ */
+export const slider = mysqlTable("slider", {
+  id: int("id").autoincrement().primaryKey(),
+  seriesId: int("seriesId").notNull().references(() => series.id, { onDelete: "cascade" }),
+  order: int("order").notNull().default(1),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Slider = typeof slider.$inferSelect;
+export type InsertSlider = typeof slider.$inferInsert;

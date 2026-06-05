@@ -1,6 +1,6 @@
 import { eq, and, asc, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, InsertFavorite, seriesImages, InsertSeriesImage, channels, Channel, InsertChannel, uploadedVideos, watchHistory, InsertWatchHistory, categories, seriesCategories, Category, InsertCategory } from "../drizzle/schema";
+import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, InsertFavorite, seriesImages, InsertSeriesImage, channels, Channel, InsertChannel, uploadedVideos, watchHistory, InsertWatchHistory, categories, seriesCategories, Category, InsertCategory, slider } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import bcrypt from "bcrypt";
 
@@ -962,4 +962,40 @@ export async function deleteExpiredPasswordTokens() {
   );
 
   return { success: true };
+}
+
+
+// ==================== السلايدر ====================
+
+export async function getSlider() {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  const result = await db.select().from(slider).orderBy(asc(slider.order));
+  return result;
+}
+
+export async function addToSlider(seriesId: number, order: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  await db.insert(slider).values({
+    seriesId,
+    order,
+    isActive: true,
+  });
+}
+
+export async function removeFromSlider(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  await db.delete(slider).where(eq(slider.id, id));
+}
+
+export async function updateSliderOrder(id: number, order: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+
+  await db.update(slider).set({ order }).where(eq(slider.id, id));
 }

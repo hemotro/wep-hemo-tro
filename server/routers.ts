@@ -1053,6 +1053,64 @@ export const appRouter = router({
         }
       }),
   }),
+
+  slider: router({
+    list: publicProcedure.query(async () => {
+      const { getSlider } = await import("./db");
+      return await getSlider();
+    }),
+
+    add: adminProcedure
+      .input(z.object({
+        seriesId: z.number(),
+        order: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const { addToSlider } = await import("./db");
+          await addToSlider(input.seriesId, input.order);
+          return { success: true, message: "تم إضافة المسلسل للسلايدر" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message || "فشل إضافة المسلسل",
+          });
+        }
+      }),
+
+    remove: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        try {
+          const { removeFromSlider } = await import("./db");
+          await removeFromSlider(input.id);
+          return { success: true, message: "تم حذف المسلسل من السلايدر" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message || "فشل حذف المسلسل",
+          });
+        }
+      }),
+
+    updateOrder: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        order: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const { updateSliderOrder } = await import("./db");
+          await updateSliderOrder(input.id, input.order);
+          return { success: true, message: "تم تحديث الترتيب" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message || "فشل تحديث الترتيب",
+          });
+        }
+      }),
+  }),
 });
 export type AppRouter = typeof appRouter;
 
