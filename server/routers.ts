@@ -465,7 +465,7 @@ export const appRouter = router({
         title: z.string().optional(),
         descriptionAr: z.string().optional(),
         description: z.string().optional(),
-        videoUrl: z.string().url("رابط الفيديو غير صحيح"),
+        videoUrl: z.string().min(1, "رابط الفيديو مطلوب"),
         video480pUrl: z.string().optional(),
         video720pUrl: z.string().optional(),
         video1080pUrl: z.string().optional(),
