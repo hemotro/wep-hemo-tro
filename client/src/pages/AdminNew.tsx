@@ -170,10 +170,12 @@ export function AdminNew() {
         <h1 className="text-4xl font-bold mb-8 text-foreground">لوحة الإدارة</h1>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="series">المسلسلات</TabsTrigger>
             <TabsTrigger value="episodes">الحلقات</TabsTrigger>
             <TabsTrigger value="categories">الأقسام</TabsTrigger>
+            <TabsTrigger value="slider">السلايدر</TabsTrigger>
+            <TabsTrigger value="images">الصور</TabsTrigger>
           </TabsList>
 
           {/* ==================== تبويب المسلسلات ==================== */}
@@ -377,6 +379,55 @@ export function AdminNew() {
                 </Card>
               ))}
             </div>
+          </TabsContent>
+
+          {/* ==================== تبويب السلايدر ==================== */}
+          <TabsContent value="slider" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>إدارة السلايدر</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">اختر المسلسلات التي تريد عرضها في السلايدر وحدد ترتيبها</p>
+                <div className="grid gap-4">
+                  {seriesList?.map((series) => (
+                    <div key={series.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <span>{series.titleAr}</span>
+                      <Button size="sm" variant="outline">
+                        إضافة للسلايدر
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ==================== تبويب الصور ==================== */}
+          <TabsContent value="images" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>إدارة صور المسلسلات</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">تعديل صور المسلسلات والأقسام</p>
+                <div className="grid gap-4">
+                  {seriesList?.map((series) => (
+                    <div key={series.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex-1">
+                        <span className="font-medium">{series.titleAr}</span>
+                        {series.posterUrl && (
+                          <img src={series.posterUrl} alt={series.titleAr} className="w-16 h-24 mt-2 rounded" />
+                        )}
+                      </div>
+                      <Button size="sm" variant="outline">
+                        تعديل الصورة
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

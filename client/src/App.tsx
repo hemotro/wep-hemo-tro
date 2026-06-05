@@ -11,10 +11,7 @@ import Account from "./pages/Account";
 import SeriesDetail from "./pages/SeriesDetail";
 import EpisodePlayer from "./pages/EpisodePlayer";
 import Login from "./pages/Login";
-import Admin from "./pages/Admin";
-import AdminSeriesImages from "./pages/AdminSeriesImages";
 import { AdminNew } from "./pages/AdminNew";
-import { AdminSlider } from "./pages/AdminSlider";
 import ResetPassword from "./pages/ResetPassword";
 import PasswordResetCode from "./pages/PasswordResetCode";
 import BottomNav from "./components/BottomNav";
@@ -32,10 +29,7 @@ function Router() {
       <Route path={"/live"} component={Live} />
       <Route path={"/search"} component={Search} />
       <Route path={"/account"} component={Account} />
-      <Route path={"/admin"} component={Admin} />
-      <Route path={"/admin-new"} component={AdminNew} />
-      <Route path={"/admin-slider"} component={AdminSlider} />
-      <Route path={"/admin-images"} component={AdminSeriesImages} />
+      <Route path={"/admin"} component={AdminNew} />
       <Route path={"/series/:id"} component={SeriesDetail} />
       <Route path={"/episode/:seriesId/:episodeNumber"} component={EpisodePlayer} />
       <Route path={"/404"} component={NotFound} />
