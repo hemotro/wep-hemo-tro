@@ -28,6 +28,7 @@ export function AdminNew() {
   });
   
   const verifyCodeMutation = trpc.auth.verifyAdminCode.useMutation();
+  const seedRealDataMutation = trpc.seedRealData.useMutation();
   
   const handleVerifyCode = async () => {
     if (!adminCode) {
@@ -241,7 +242,24 @@ export function AdminNew() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8 text-foreground">لوحة الإدارة</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold text-foreground">لوحة الإدارة</h1>
+          <Button
+            onClick={async () => {
+              try {
+                await seedRealDataMutation.mutateAsync();
+                toast.success("تم إضافة مسلسلات حقيقية!");
+                setTimeout(() => window.location.reload(), 1000);
+              } catch (error: any) {
+                toast.error(error.message || "فشل");
+              }
+            }}
+            disabled={seedRealDataMutation.isPending}
+            className="gap-2"
+          >
+            {seedRealDataMutation.isPending ? "جاري..." : "إضافة مسلسلات حقيقية"}
+          </Button>
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5 mb-6">

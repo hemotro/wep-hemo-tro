@@ -1111,6 +1111,90 @@ export const appRouter = router({
         }
       }),
   }),
+  
+  // ==================== Seed Real Data ====================
+  seedRealData: adminProcedure.mutation(async () => {
+    try {
+      const { createSeries, createEpisode, addSeriesToCategory, getCategories } = await import("./db");
+      
+      // إضافة مسلسلات حقيقية
+      const seriesData = [
+        {
+          titleAr: "صراع العروش",
+          title: "Game of Thrones",
+          descriptionAr: "ملحمة درامية عن الصراع على العرش",
+          description: "Epic drama about the struggle for the throne",
+          genre: "Drama",
+          posterUrl: "https://via.placeholder.com/300x450?text=Game+of+Thrones",
+          totalSeasons: 8,
+          totalEpisodes: 73,
+        },
+        {
+          titleAr: "الأصدقاء",
+          title: "Friends",
+          descriptionAr: "مسلسل كوميدي عن مجموعة أصدقاء",
+          description: "Comedy about a group of friends",
+          genre: "Comedy",
+          posterUrl: "https://via.placeholder.com/300x450?text=Friends",
+          totalSeasons: 10,
+          totalEpisodes: 236,
+        },
+        {
+          titleAr: "مسلسل الرجل العنكبوت",
+          title: "Spider-Man",
+          descriptionAr: "مسلسل أكشن عن الرجل العنكبوت",
+          description: "Action series about Spider-Man",
+          genre: "Action",
+          posterUrl: "https://via.placeholder.com/300x450?text=Spider-Man",
+          totalSeasons: 3,
+          totalEpisodes: 39,
+        },
+      ];
+
+      const createdSeries: any[] = [];
+      for (const series of seriesData) {
+        const result = await createSeries(series);
+        createdSeries.push(result);
+      }
+
+      // إضافة حلقات لأول مسلسل
+      if (createdSeries.length > 0) {
+        const firstSeriesId = (createdSeries[0] as any).id;
+        for (let i = 1; i <= 5; i++) {
+          await createEpisode({
+            seriesId: firstSeriesId,
+            season: 1,
+            episodeNumber: i,
+            titleAr: `الحلقة ${i}`,
+            title: `Episode ${i}`,
+            descriptionAr: `وصف الحلقة ${i}`,
+            description: `Description of episode ${i}`,
+            videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+            videoType: "youtube",
+          });
+        }
+      }
+
+      // الحصول على الأقسام
+      const categories = await getCategories();
+
+      // ربط المسلسلات بالأقسام
+      for (let i = 0; i < createdSeries.length && i < categories.length; i++) {
+        await addSeriesToCategory((createdSeries[i] as any).id, (categories[i] as any).id);
+      }
+
+      return {
+        success: true,
+        message: `تم إضافة ${createdSeries.length} مسلسلات حقيقية بنجاح!`,
+        seriesCount: createdSeries.length,
+      };
+    } catch (error: any) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: error.message || "فشل إضافة البيانات",
+      });
+    }
+  }),
 });
 export type AppRouter = typeof appRouter;
 
