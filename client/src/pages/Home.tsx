@@ -1,91 +1,56 @@
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Play, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
-import { Play } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
 
 export default function Home() {
-  const { data: seriesList, isLoading } = trpc.series.list.useQuery();
+  const [, setLocation] = useLocation();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
-  const [touchStart, setTouchStart] = useState(0);
-  const [touchEnd, setTouchEnd] = useState(0);
   const [scrollY, setScrollY] = useState(0);
-  const [showSmallHeader, setShowSmallHeader] = useState(false);
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const heroRef = useRef<HTMLDivElement>(null);
 
-  // معالج التمرير للـ Parallax و Header الذكي
+  // استدعاء البيانات
+  const { data: sliderData, isLoading: sliderLoading } = trpc.slider.list.useQuery();
+  const { data: categories, isLoading: categoriesLoading } = trpc.categories.list.useQuery();
+  const { data: seriesList, isLoading: seriesLoading } = trpc.series.list.useQuery();
+
+  // معالجة التمرير
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollPos = window.scrollY;
-      setScrollY(scrollPos);
-      // إظهار Header الصغير عند التمرير 200px
-      setShowSmallHeader(scrollPos > 200);
-    };
-
+    const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // تحديد السلاسل المراد عرضها في السلايدر
+  const displaySeries = sliderData && sliderData.length > 0
+    ? sliderData.map((slider: any) => 
+        seriesList?.find((s: any) => s.id === slider.seriesId)
+      ).filter(Boolean)
+    : [];
+
+  // تحديث الشريحة تلقائياً
   useEffect(() => {
-    if (!autoPlay || !seriesList || seriesList.length === 0) return;
+    if (!autoPlay || displaySeries.length === 0) return;
 
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % seriesList.length);
+      setCurrentSlide((prev) => (prev + 1) % displaySeries.length);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [autoPlay, seriesList]);
+  }, [autoPlay, displaySeries.length]);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX);
-    setAutoPlay(false);
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    setTouchEnd(e.changedTouches[0].clientX);
-    handleSwipe();
-  };
-
-  const handleSwipe = () => {
-    if (!seriesList || seriesList.length === 0) return;
-
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 50;
-    const isRightSwipe = distance < -50;
-
-    if (isLeftSwipe) {
-      setCurrentSlide((prev) => (prev + 1) % seriesList.length);
-    } else if (isRightSwipe) {
-      setCurrentSlide((prev) => (prev - 1 + seriesList.length) % seriesList.length);
-    }
-  };
-
-  if (isLoading) {
+  if (sliderLoading || categoriesLoading || seriesLoading) {
     return (
-      <div className="flex-1 pb-20 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">جاري تحميل المسلسلات...</p>
-        </div>
+      <div className="flex-1 pb-20 flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">جاري تحميل البيانات...</p>
       </div>
     );
   }
 
-  if (!seriesList || seriesList.length === 0) {
-    return (
-      <div className="flex-1 pb-20 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-foreground mb-4">مرحباً بك في hemo tro</h1>
-          <p className="text-muted-foreground">لا توجد مسلسلات حالياً</p>
-        </div>
-      </div>
-    );
-  }
-
-  const currentSeries = seriesList[currentSlide];
+  const currentSeries = displaySeries[currentSlide];
   const currentBanner = currentSeries?.posterUrl;
 
   // حساب Parallax offset
@@ -93,77 +58,31 @@ export default function Home() {
 
   return (
     <div className="flex-1 pb-20">
-      {/* Header الذكي - يظهر عند التمرير */}
-      <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          showSmallHeader
-            ? "bg-background/80 backdrop-blur-md py-2"
-            : "bg-transparent py-3"
-        }`}
-      >
-        <div className="flex items-center justify-end px-4 md:px-6">
-          <Link href="/">
-            <a className="hover:opacity-80 transition-opacity">
-              <img
-                src="/logo-new.png"
-                alt="hemo tro"
-                className={`w-auto object-contain drop-shadow-lg transition-all duration-300 ${
-                  showSmallHeader ? "h-8" : "h-0 opacity-0"
-                }`}
-              />
-            </a>
-          </Link>
-        </div>
-      </header>
+      {/* السلايدر الرئيسي */}
+      <div className="relative w-full overflow-hidden">
+        {displaySeries && displaySeries.length > 0 && currentSeries ? (
+          <div className="relative w-full h-screen max-h-[600px] overflow-hidden">
+            {/* الخلفية مع Parallax */}
+            <div
+              className="absolute inset-0 bg-cover bg-center transition-all duration-500"
+              style={{
+                backgroundImage: `url('${currentBanner}')`,
+                backgroundPosition: `center ${parallaxOffset}px`,
+                filter: "brightness(0.4)",
+              }}
+            />
 
-      {/* Hero Section - 60vh على الهاتف، 70vh على الشاشات الكبيرة */}
-      <div className="relative w-full h-[60vh] md:h-[70vh] overflow-hidden bg-gradient-to-br from-primary/20 to-background">
-        {currentSeries && (
-          <div
-            ref={carouselRef}
-            className="relative w-full h-full"
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-          >
-            {/* الصورة مع Parallax Effect */}
-            {currentBanner && (
-              <>
-                <img
-                  src={currentBanner}
-                  alt={currentSeries.titleAr}
-                  className="w-full h-full object-cover"
-                  style={{
-                    transform: `translateY(${parallaxOffset}px)`,
-                    transition: "transform 0.1s ease-out",
-                  }}
-                />
-                {/* Gradient أسود خفيف في الأعلى */}
-                <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/40 via-black/20 to-transparent"></div>
-              </>
-            )}
+            {/* Gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
 
-            {/* Gradient أسود قوي في الأسفل */}
-            <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-black via-black/60 to-transparent"></div>
-
-            {/* الشعار الصغير في الأعلى اليمين */}
-            <Link href="/">
-              <a className="absolute top-4 md:top-6 right-4 md:right-6 z-30 hover:opacity-80 transition-opacity">
-                <img
-                  src="/logo-new.png"
-                  alt="hemo tro"
-                  className="h-8 sm:h-10 md:h-12 w-auto object-contain drop-shadow-lg"
-                />
-              </a>
-            </Link>
-
-            {/* معلومات المسلسل - في الأسفل */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8 lg:p-12">
+            {/* المحتوى */}
+            <div className="relative h-full flex flex-col justify-center px-4 sm:px-8 md:px-12">
               <div className="max-w-2xl">
                 <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 drop-shadow-lg">
                   {currentSeries.titleAr}
                 </h2>
-                <p className="text-primary text-sm sm:text-base md:text-lg mb-4 drop-shadow-lg">
-                  {currentSeries.genre}
+                <p className="text-primary text-sm md:text-lg mb-4 drop-shadow-lg">
+                  {(currentSeries as any).genre || ""}
                 </p>
                 <Link href={`/series/${currentSeries.id}`}>
                   <a>
@@ -176,9 +95,35 @@ export default function Home() {
               </div>
             </div>
 
+            {/* أزرار التنقل */}
+            {displaySeries.length > 1 && (
+              <>
+                <button
+                  onClick={() => {
+                    setCurrentSlide((prev) => (prev - 1 + displaySeries.length) % displaySeries.length);
+                    setAutoPlay(false);
+                  }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-white/20 hover:bg-white/40 p-2 rounded-full transition-all"
+                  aria-label="الشريحة السابقة"
+                >
+                  <ChevronLeft className="w-6 h-6 text-white" />
+                </button>
+                <button
+                  onClick={() => {
+                    setCurrentSlide((prev) => (prev + 1) % displaySeries.length);
+                    setAutoPlay(false);
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-white/20 hover:bg-white/40 p-2 rounded-full transition-all"
+                  aria-label="الشريحة التالية"
+                >
+                  <ChevronRight className="w-6 h-6 text-white" />
+                </button>
+              </>
+            )}
+
             {/* مؤشرات الشرائح */}
             <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-              {seriesList.map((_, index) => (
+              {displaySeries.map((_: any, index: number) => (
                 <button
                   key={index}
                   onClick={() => {
@@ -195,45 +140,81 @@ export default function Home() {
               ))}
             </div>
           </div>
-        )}
+        ) : null}
       </div>
 
-      {/* قائمة أفقية للمسلسلات */}
-      <div className="px-4 py-6 md:py-8">
-        <h3 className="text-lg md:text-xl font-bold text-foreground mb-4">جميع المسلسلات</h3>
-        <div className="overflow-x-auto pb-4">
-          <div className="flex gap-4 min-w-min">
-            {seriesList.map((series) => (
-              <Link key={series.id} href={`/series/${series.id}`}>
-                <a className="flex-shrink-0 group">
-                  <div className="relative w-32 h-48 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 to-background">
-                    {series.posterUrl ? (
-                      <>
-                        <img
-                          src={series.posterUrl}
-                          alt={series.titleAr}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/60 transition-colors flex items-end justify-center pb-3 opacity-0 group-hover:opacity-100">
-                          <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                            <Play className="w-3 h-3 mr-1" />
-                            شاهد
-                          </Button>
+      {/* عرض الأقسام */}
+      {categories && categories.length > 0 && seriesList && (
+        <div className="space-y-8 px-4 sm:px-8 md:px-12 py-12 max-w-7xl mx-auto">
+          {categories.map((category: any) => {
+            const categorySeriesList = seriesList?.filter(
+              (series: any) => (series as any).categoryId === category.id
+            ) || [];
+
+            if (categorySeriesList.length === 0) return null;
+
+            return (
+              <div key={category.id} className="space-y-4">
+                <h3 className="text-2xl font-bold text-foreground">{category.titleAr}</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {categorySeriesList.map((series: any) => (
+                    <button
+                      key={series.id}
+                      onClick={() => {
+                        setLocation(`/series/${series.id}`);
+                        window.scrollTo(0, 0);
+                      }}
+                      className="group relative overflow-hidden rounded-lg transition-all duration-300 hover:ring-2 hover:ring-primary/50 active:scale-95"
+                    >
+                      {/* صورة المسلسل */}
+                      <div className="relative w-full bg-muted overflow-hidden rounded-lg" style={{ aspectRatio: "3 / 4" }}>
+                        {series.posterUrl ? (
+                          <img
+                            src={series.posterUrl}
+                            alt={series.titleAr}
+                            className="w-full h-full object-cover group-hover:brightness-75 transition-all duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                            <span className="text-center text-muted-foreground text-sm px-2">
+                              {series.titleAr}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* overlay عند التمرير */}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                          <div className="bg-primary/90 p-2.5 rounded-full">
+                            <svg
+                              className="w-5 h-5 text-white fill-white"
+                              viewBox="0 0 24 24"
+                            >
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                          </div>
                         </div>
-                      </>
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center">
-                        <p className="text-sm font-semibold text-foreground mb-2">{series.titleAr}</p>
-                        <p className="text-xs text-muted-foreground">{series.totalEpisodes} حلقة</p>
                       </div>
-                    )}
-                  </div>
-                </a>
-              </Link>
-            ))}
-          </div>
+
+                      {/* معلومات المسلسل */}
+                      <div className="mt-3">
+                        <p className="font-semibold text-foreground text-sm line-clamp-2">{series.titleAr}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{series.totalSeasons || 0} موسم</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
-      </div>
+      )}
+
+      {/* حالة عدم وجود بيانات */}
+      {(!categories || categories.length === 0) && !categoriesLoading && (
+        <div className="flex-1 flex items-center justify-center min-h-screen">
+          <p className="text-muted-foreground">لا توجد بيانات متاحة حالياً</p>
+        </div>
+      )}
     </div>
   );
 }

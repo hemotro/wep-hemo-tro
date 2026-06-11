@@ -39,9 +39,9 @@
 - [x] Add recommendations system
 
 ## Phase 6: Testing & Optimization
-- [ ] Write unit tests for API endpoints
-- [ ] Test authentication edge cases
-- [ ] Test UI responsiveness
+- [x] Write unit tests for API endpoints
+- [x] Test authentication edge cases
+- [x] Test UI responsiveness
 - [ ] Performance optimization
 - [ ] Bug fixes and refinements
 
@@ -142,3 +142,12 @@
 - [x] Add API endpoints for email verification
 - [x] Integrate EmailVerification component in Login page
 - [ ] Test email verification flow end-to-end
+
+## Phase 17: Fix Frontend TypeScript Errors & Route Registration
+- [x] Fix Home.tsx procedure names (slider.list, categories.list, series.list)
+- [x] Create EpisodeDetail.tsx component for video playback
+- [x] Fix EpisodeDetail to use useMemo for finding episodes
+- [x] Register EpisodeDetail route in App.tsx
+- [x] Write comprehensive tests for Home, SeriesDetail, and EpisodeDetail pages
+- [x] Verify all pages load without errors
+- [x] Test category filtering and slider functionality

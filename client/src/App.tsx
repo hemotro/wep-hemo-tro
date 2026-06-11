@@ -9,7 +9,7 @@ import Live from "./pages/Live";
 import Search from "./pages/Search";
 import Account from "./pages/Account";
 import SeriesDetail from "./pages/SeriesDetail";
-import EpisodePlayer from "./pages/EpisodePlayer";
+import EpisodeDetail from "./pages/EpisodeDetail";
 import Login from "./pages/Login";
 import { AdminNew } from "./pages/AdminNew";
 import ResetPassword from "./pages/ResetPassword";
@@ -31,7 +31,7 @@ function Router() {
       <Route path={"/account"} component={Account} />
       <Route path={"/admin"} component={AdminNew} />
       <Route path={"/series/:id"} component={SeriesDetail} />
-      <Route path={"/episode/:seriesId/:episodeNumber"} component={EpisodePlayer} />
+      <Route path={"/episode/:seriesId/:episodeNumber"} component={EpisodeDetail} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
