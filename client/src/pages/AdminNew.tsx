@@ -13,8 +13,19 @@ export function AdminNew() {
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("series");
   const [adminCode, setAdminCode] = useState("");
-  const [isCodeVerified, setIsCodeVerified] = useState(localStorage.getItem("adminCodeVerified") === "true");
-  const [showCodeModal, setShowCodeModal] = useState(!isCodeVerified);
+  // الدخول التلقائي - حفظ دائم بدون انتهاء صلاحية
+  const [isCodeVerified, setIsCodeVerified] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem("adminCodeVerified") === "true";
+    }
+    return false;
+  });
+  const [showCodeModal, setShowCodeModal] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem("adminCodeVerified") !== "true";
+    }
+    return true;
+  });
   
   const verifyCodeMutation = trpc.auth.verifyAdminCode.useMutation();
   
@@ -28,8 +39,11 @@ export function AdminNew() {
       await verifyCodeMutation.mutateAsync({ code: adminCode });
       setIsCodeVerified(true);
       setShowCodeModal(false);
+      // حفظ دائم بدون انتهاء صلاحية
       localStorage.setItem("adminCodeVerified", "true");
-      toast.success("تم التحقق بنجاح");
+      // حفظ وقت التحقق (اختياري للمراجعة)
+      localStorage.setItem("adminCodeVerifiedAt", new Date().toISOString());
+      toast.success("تم التحقق بنجاح - الدخول التلقائي مفعل");
     } catch (error) {
       toast.error("الرمز السري غير صحيح");
       setAdminCode("");
@@ -38,7 +52,11 @@ export function AdminNew() {
   
   if (!isCodeVerified) {
     return (
-      <Dialog open={showCodeModal} onOpenChange={setShowCodeModal}>
+      <Dialog open={showCodeModal} onOpenChange={(open) => {
+        // منع إغلاق الـ Dialog بدون تحقق صحيح
+        if (!open) return;
+        setShowCodeModal(open);
+      }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>التحقق من الوصول</DialogTitle>
@@ -59,6 +77,9 @@ export function AdminNew() {
             >
               {verifyCodeMutation.isPending ? "جاري التحقق..." : "تحقق"}
             </Button>
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              ستبقى مسجل دخول بعد التحقق الناجح
+            </p>
           </div>
         </DialogContent>
       </Dialog>
