@@ -14,7 +14,7 @@ export default function Home() {
 
   // استدعاء البيانات
   const { data: sliderData, isLoading: sliderLoading } = trpc.slider.list.useQuery();
-  const { data: categories, isLoading: categoriesLoading } = trpc.categories.list.useQuery();
+  const { data: categoriesWithSeries, isLoading: categoriesLoading } = trpc.categories.listWithSeries.useQuery();
   const { data: seriesList, isLoading: seriesLoading } = trpc.series.list.useQuery();
 
   // معالجة التمرير
@@ -144,12 +144,11 @@ export default function Home() {
       </div>
 
       {/* عرض الأقسام */}
-      {categories && categories.length > 0 && seriesList && (
+      {categoriesWithSeries && categoriesWithSeries.length > 0 && (
         <div className="space-y-8 px-4 sm:px-8 md:px-12 py-12 max-w-7xl mx-auto">
-          {categories.map((category: any) => {
-            const categorySeriesList = seriesList?.filter(
-              (series: any) => (series as any).categoryId === category.id
-            ) || [];
+          {categoriesWithSeries.map((categoryData: any) => {
+            const category = categoryData.category;
+            const categorySeriesList = categoryData.series || [];
 
             if (categorySeriesList.length === 0) return null;
 
@@ -210,7 +209,7 @@ export default function Home() {
       )}
 
       {/* حالة عدم وجود بيانات */}
-      {(!categories || categories.length === 0) && !categoriesLoading && (
+      {(!categoriesWithSeries || categoriesWithSeries.length === 0) && !categoriesLoading && (
         <div className="flex-1 flex items-center justify-center min-h-screen">
           <p className="text-muted-foreground">لا توجد بيانات متاحة حالياً</p>
         </div>

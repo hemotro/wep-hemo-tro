@@ -28,6 +28,7 @@ export function AdminNew() {
   });
   
   const verifyCodeMutation = trpc.auth.verifyAdminCode.useMutation();
+  const seedDataMutation = trpc.seedData.useMutation();
   
   const handleVerifyCode = async () => {
     if (!adminCode) {
@@ -85,6 +86,19 @@ export function AdminNew() {
       </Dialog>
     );
   }
+
+  // ==================== Seed Data ====================
+  const handleSeedData = async () => {
+    try {
+      await seedDataMutation.mutateAsync();
+      toast.success("تم إضافة البيانات بنجاح!");
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (error: any) {
+      toast.error(error.message || "فشل إضافة البيانات");
+    }
+  };
 
   // ==================== إدارة المسلسلات ====================
   const { data: seriesList, refetch: refetchSeries } = trpc.series.list.useQuery();
@@ -241,7 +255,17 @@ export function AdminNew() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8 text-foreground">لوحة الإدارة</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold text-foreground">لوحة الإدارة</h1>
+          <Button
+            onClick={handleSeedData}
+            disabled={seedDataMutation.isPending}
+            variant="outline"
+            className="gap-2"
+          >
+            {seedDataMutation.isPending ? "جاري الإضافة..." : "إضافة بيانات تجريبية"}
+          </Button>
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5 mb-6">

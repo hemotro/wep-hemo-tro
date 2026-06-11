@@ -1111,6 +1111,42 @@ export const appRouter = router({
         }
       }),
   }),
+  
+  // ==================== Seed Data ====================
+  seedData: adminProcedure.mutation(async () => {
+    try {
+      const { getAllSeries, getCategories, addSeriesToCategory } = await import("./db");
+      
+      // الحصول على أول مسلسل
+      const allSeries = await getAllSeries();
+      if (allSeries.length === 0) {
+        throw new Error("لا توجد مسلسلات في قاعدة البيانات");
+      }
+      
+      const seriesId = allSeries[0].id;
+      
+      // الحصول على الأقسام
+      const allCategories = await getCategories();
+      if (allCategories.length === 0) {
+        throw new Error("لا توجد أقسام في قاعدة البيانات");
+      }
+      
+      // إضافة علاقات
+      for (const category of allCategories) {
+        await addSeriesToCategory(seriesId, category.id);
+      }
+      
+      return {
+        success: true,
+        message: `تم إضافة البيانات بنجاح! تم ربط المسلسل (ID: ${seriesId}) مع ${allCategories.length} أقسام`,
+      };
+    } catch (error: any) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: error.message || "فشل إضافة البيانات",
+      });
+    }
+  }),
 });
 export type AppRouter = typeof appRouter;
 
