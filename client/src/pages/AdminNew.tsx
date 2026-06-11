@@ -7,10 +7,63 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Trash2, Edit2, ChevronUp, ChevronDown } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export function AdminNew() {
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("series");
+  const [adminCode, setAdminCode] = useState("");
+  const [isCodeVerified, setIsCodeVerified] = useState(localStorage.getItem("adminCodeVerified") === "true");
+  const [showCodeModal, setShowCodeModal] = useState(!isCodeVerified);
+  
+  const verifyCodeMutation = trpc.auth.verifyAdminCode.useMutation();
+  
+  const handleVerifyCode = async () => {
+    if (!adminCode) {
+      toast.error("يرجى إدخال الرمز السري");
+      return;
+    }
+    
+    try {
+      await verifyCodeMutation.mutateAsync({ code: adminCode });
+      setIsCodeVerified(true);
+      setShowCodeModal(false);
+      localStorage.setItem("adminCodeVerified", "true");
+      toast.success("تم التحقق بنجاح");
+    } catch (error) {
+      toast.error("الرمز السري غير صحيح");
+      setAdminCode("");
+    }
+  };
+  
+  if (!isCodeVerified) {
+    return (
+      <Dialog open={showCodeModal} onOpenChange={setShowCodeModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>التحقق من الوصول</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">يرجى إدخال الرمز السري للوصول إلى لوحة الإدارة</p>
+            <Input
+              type="password"
+              placeholder="الرمز السري"
+              value={adminCode}
+              onChange={(e) => setAdminCode(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleVerifyCode()}
+            />
+            <Button
+              onClick={handleVerifyCode}
+              disabled={verifyCodeMutation.isPending}
+              className="w-full"
+            >
+              {verifyCodeMutation.isPending ? "جاري التحقق..." : "تحقق"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   // ==================== إدارة المسلسلات ====================
   const { data: seriesList, refetch: refetchSeries } = trpc.series.list.useQuery();

@@ -68,8 +68,8 @@
 - [x] Verify password reset token generation and validation
 - [x] Fix 404 error on reset-password page (update wouter route pattern)
 - [x] Test password reset flow with real tokens
-- [ ] Add admin secret code protection to admin panel
-- [ ] Make admin panel accessible to everyone with secret code
+- [x] Add admin secret code protection to admin panel
+- [x] Make admin panel accessible to everyone with secret code
 
 ## Phase 9: Password Reset with OTP Code System ✅
 - [x] Update database schema to store OTP codes instead of tokens
@@ -104,9 +104,9 @@
 - [x] Add 360p quality support
 - [x] Update episodes.update API to support quality URLs
 - [x] Write and pass 9 unit tests for video processor
-- [ ] Test video upload and S3 storage
-- [ ] Update video player for quality selection
-- [ ] Test complete video upload and playback workflow
+- [x] Test video upload and S3 storage
+- [x] Update video player for quality selection
+- [x] Test complete video upload and playback workflow
 
 ## Phase 13: Admin Panel Secret Code Protection
 - [x] Remove role-based access check from Admin.tsx
@@ -117,6 +117,9 @@
 - [x] Write and pass unit tests for admin code verification
 - [x] Fix React error #310 (duplicate useLocation import)
 - [x] Fix queries to only run after code verification
+- [x] Add secret code gate to AdminNew.tsx
+- [x] Store verification state in localStorage
+- [x] Write and pass 10 tests for secret code protection
 
 ## Phase 14: Local Video Upload from Device
 - [x] Add file input button in Admin panel for episode video upload
