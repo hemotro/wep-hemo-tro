@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Trash2, Edit2, ChevronUp, ChevronDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AdminDisplaySections } from "./AdminDisplaySections";
+import { AdminEditSeries } from "./AdminEditSeries";
+import { AdminChannels } from "./AdminChannels";
 
 export function AdminNew() {
   const [, navigate] = useLocation();
@@ -262,12 +265,15 @@ export function AdminNew() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-6">
+          <TabsList className="grid w-full grid-cols-8 mb-6">
             <TabsTrigger value="series">المسلسلات</TabsTrigger>
             <TabsTrigger value="episodes">الحلقات</TabsTrigger>
             <TabsTrigger value="categories">الأقسام</TabsTrigger>
             <TabsTrigger value="slider">السلايدر</TabsTrigger>
             <TabsTrigger value="images">الصور</TabsTrigger>
+            <TabsTrigger value="displaySections">أقسام العرض</TabsTrigger>
+            <TabsTrigger value="editSeries">تعديل المسلسلات</TabsTrigger>
+            <TabsTrigger value="channels">القنوات</TabsTrigger>
           </TabsList>
 
           {/* ==================== تبويب المسلسلات ==================== */}
@@ -520,6 +526,18 @@ export function AdminNew() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+          {/* ==================== تبويب أقسام العرض ==================== */}
+          <TabsContent value="displaySections" className="space-y-6">
+            <AdminDisplaySections />
+          </TabsContent>
+          {/* ==================== تبويب تعديل المسلسلات ==================== */}
+          <TabsContent value="editSeries" className="space-y-6">
+            <AdminEditSeries />
+          </TabsContent>
+          {/* ==================== تبويب القنوات ==================== */}
+          <TabsContent value="channels" className="space-y-6">
+            <AdminChannels />
           </TabsContent>
         </Tabs>
       </div>
