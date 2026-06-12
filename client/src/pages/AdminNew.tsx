@@ -152,6 +152,7 @@ export function AdminNew() {
     titleAr: "",
     descriptionAr: "",
     videoUrl: "",
+    videoType: "youtube" as "youtube" | "mp4" | "m3u8",
     video480pUrl: "",
     video720pUrl: "",
     video1080pUrl: "",
@@ -170,6 +171,7 @@ export function AdminNew() {
         titleAr: episodeForm.titleAr,
         descriptionAr: episodeForm.descriptionAr,
         videoUrl: episodeForm.videoUrl,
+        videoType: episodeForm.videoType,
         video480pUrl: episodeForm.video480pUrl || undefined,
         video720pUrl: episodeForm.video720pUrl || undefined,
         video1080pUrl: episodeForm.video1080pUrl || undefined,
@@ -180,6 +182,7 @@ export function AdminNew() {
         titleAr: "",
         descriptionAr: "",
         videoUrl: "",
+        videoType: "youtube",
         video480pUrl: "",
         video720pUrl: "",
         video1080pUrl: "",
@@ -379,6 +382,18 @@ export function AdminNew() {
                       value={episodeForm.descriptionAr}
                       onChange={(e) => setEpisodeForm({ ...episodeForm, descriptionAr: e.target.value })}
                     />
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">نوع الفيديو</label>
+                      <select
+                        value={episodeForm.videoType}
+                        onChange={(e) => setEpisodeForm({ ...episodeForm, videoType: e.target.value as "youtube" | "mp4" | "m3u8" })}
+                        className="w-full px-3 py-2 border rounded-md bg-background text-foreground"
+                      >
+                        <option value="youtube">YouTube</option>
+                        <option value="mp4">MP4 (رفع مباشر)</option>
+                        <option value="m3u8">M3U8 (Streaming)</option>
+                      </select>
+                    </div>
                     <Input
                       placeholder="رابط الفيديو الرئيسي"
                       value={episodeForm.videoUrl}

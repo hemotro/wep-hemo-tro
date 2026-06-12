@@ -1,13 +1,20 @@
-import { useParams, useLocation } from "wouter";
+import { useParams as useWouterParams, useLocation as useWouterLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useMemo } from "react";
 
+// دالة لاستخراج معرف YouTube من الرابط
+function extractYoutubeId(url: string): string {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return match && match[2].length === 11 ? match[2] : "";
+}
+
 export default function EpisodeDetail() {
-  const { seriesId, episodeNumber } = useParams<{ seriesId: string; episodeNumber: string }>();
-  const [, setLocation] = useLocation();
+  const { seriesId, episodeNumber } = useWouterParams<{ seriesId: string; episodeNumber: string }>();
+  const [, setLocation] = useWouterLocation();
   const [selectedQuality, setSelectedQuality] = useState<"1080p" | "720p" | "480p">("720p");
 
   const series_id = parseInt(seriesId || "0");
@@ -71,13 +78,25 @@ export default function EpisodeDetail() {
         <div className="w-full max-w-6xl mx-auto px-4 py-4">
           {videoUrl ? (
             <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ aspectRatio: "16 / 9" }}>
-              <video
-                key={videoUrl}
-                controls
-                autoPlay
-                className="w-full h-full"
-                src={videoUrl}
-              />
+              {episode.videoType === "youtube" ? (
+                <iframe
+                  key={videoUrl}
+                  className="w-full h-full"
+                  src={`https://www.youtube.com/embed/${extractYoutubeId(videoUrl)}`}
+                  title="YouTube video player"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              ) : (
+                <video
+                  key={videoUrl}
+                  controls
+                  autoPlay
+                  className="w-full h-full"
+                  src={videoUrl}
+                />
+              )}
             </div>
           ) : (
             <div className="relative w-full bg-black rounded-lg overflow-hidden flex items-center justify-center" style={{ aspectRatio: "16 / 9" }}>
