@@ -154,3 +154,14 @@
 - [x] Write comprehensive tests for Home, SeriesDetail, and EpisodeDetail pages
 - [x] Verify all pages load without errors
 - [x] Test category filtering and slider functionality
+
+
+## Phase 19: نظام المنصات (Platform) وأقسام العرض (Display Section)
+- [ ] إضافة جدول platforms إلى schema
+- [ ] إضافة جدول displaySections إلى schema
+- [ ] إضافة حقول platformId و displaySectionId إلى جدول series
+- [ ] تحديث لوحة الإدارة لاختيار المنصة والقسم عند إضافة مسلسل
+- [ ] إضافة endpoints لإدارة المنصات والأقسام
+- [ ] تحديث الصفحة الرئيسية لعرض المحتوى حسب القسم
+- [ ] إضافة فلاتر للمنصات والأقسام في الصفحة الرئيسية
+- [ ] اختبار النظام الكامل

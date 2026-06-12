@@ -50,6 +50,7 @@ export const series = mysqlTable("series", {
   rating: varchar("rating", { length: 10 }),
   promoUrl: varchar("promoUrl", { length: 500 }), // رابط فيديو البرومو
   promoTitle: varchar("promoTitle", { length: 255 }), // عنوان البرومو
+  platformId: int("platformId"), // المنصة التي ينتمي إليها المسلسل
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -258,3 +259,57 @@ export const slider = mysqlTable("slider", {
 
 export type Slider = typeof slider.$inferSelect;
 export type InsertSlider = typeof slider.$inferInsert;
+
+/**
+ * جدول المنصات (Platforms) - مثل: شاهد، سبيستون غو، إلخ
+ */
+export const platforms = mysqlTable("platforms", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  nameAr: varchar("nameAr", { length: 255 }).notNull(),
+  description: text("description"),
+  descriptionAr: text("descriptionAr"),
+  icon: varchar("icon", { length: 500 }),
+  color: varchar("color", { length: 50 }), // لون المنصة
+  isActive: boolean("isActive").default(true),
+  displayOrder: int("displayOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Platform = typeof platforms.$inferSelect;
+export type InsertPlatform = typeof platforms.$inferInsert;
+
+/**
+ * جدول أقسام العرض (Display Sections) - مثل: حلقات جديدة، مسلسلات أجنبية، الأكثر مشاهدة، إلخ
+ */
+export const displaySections = mysqlTable("displaySections", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  nameAr: varchar("nameAr", { length: 255 }).notNull(),
+  description: text("description"),
+  descriptionAr: text("descriptionAr"),
+  icon: varchar("icon", { length: 500 }),
+  displayType: mysqlEnum("displayType", ["carousel", "grid", "list"]).default("carousel"),
+  isActive: boolean("isActive").default(true),
+  displayOrder: int("displayOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type DisplaySection = typeof displaySections.$inferSelect;
+export type InsertDisplaySection = typeof displaySections.$inferInsert;
+
+/**
+ * جدول ربط المسلسلات بأقسام العرض (علاقة many-to-many)
+ */
+export const seriesDisplaySections = mysqlTable("seriesDisplaySections", {
+  id: int("id").autoincrement().primaryKey(),
+  seriesId: int("seriesId").notNull().references(() => series.id, { onDelete: "cascade" }),
+  displaySectionId: int("displaySectionId").notNull().references(() => displaySections.id, { onDelete: "cascade" }),
+  displayOrder: int("displayOrder").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SeriesDisplaySection = typeof seriesDisplaySections.$inferSelect;
+export type InsertSeriesDisplaySection = typeof seriesDisplaySections.$inferInsert;

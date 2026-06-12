@@ -1,6 +1,6 @@
 import { eq, and, asc, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, InsertFavorite, seriesImages, InsertSeriesImage, channels, Channel, InsertChannel, uploadedVideos, watchHistory, InsertWatchHistory, categories, seriesCategories, Category, InsertCategory, slider } from "../drizzle/schema";
+import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, InsertFavorite, seriesImages, InsertSeriesImage, channels, Channel, InsertChannel, uploadedVideos, watchHistory, InsertWatchHistory, categories, seriesCategories, Category, InsertCategory, slider, platforms, Platform, InsertPlatform, displaySections, DisplaySection, InsertDisplaySection, seriesDisplaySections, SeriesDisplaySection, InsertSeriesDisplaySection } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import bcrypt from "bcrypt";
 
@@ -998,4 +998,207 @@ export async function updateSliderOrder(id: number, order: number) {
   if (!db) throw new Error("قاعدة البيانات غير متاحة");
 
   await db.update(slider).set({ order }).where(eq(slider.id, id));
+}
+
+
+// ==================== المنصات (Platforms) ====================
+
+export async function createPlatform(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+  
+  const result = await db.insert(platforms).values({
+    name: data.name,
+    nameAr: data.nameAr,
+    description: data.description,
+    descriptionAr: data.descriptionAr,
+    icon: data.icon,
+    color: data.color,
+    isActive: data.isActive !== false,
+    displayOrder: data.displayOrder || 0,
+  });
+  
+  return result;
+}
+
+export async function getPlatforms() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db.select().from(platforms).where(eq(platforms.isActive, true)).orderBy(asc(platforms.displayOrder));
+  return result;
+}
+
+export async function getPlatformById(platformId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(platforms).where(eq(platforms.id, platformId)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function updatePlatform(platformId: number, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+  
+  await db.update(platforms).set({
+    name: data.name,
+    nameAr: data.nameAr,
+    description: data.description,
+    descriptionAr: data.descriptionAr,
+    icon: data.icon,
+    color: data.color,
+    isActive: data.isActive,
+    displayOrder: data.displayOrder,
+  }).where(eq(platforms.id, platformId));
+  
+  return { success: true };
+}
+
+export async function deletePlatform(platformId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+  
+  await db.delete(platforms).where(eq(platforms.id, platformId));
+  return { success: true };
+}
+
+// ==================== أقسام العرض (Display Sections) ====================
+
+export async function createDisplaySection(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+  
+  const result = await db.insert(displaySections).values({
+    name: data.name,
+    nameAr: data.nameAr,
+    description: data.description,
+    descriptionAr: data.descriptionAr,
+    icon: data.icon,
+    displayType: data.displayType || "carousel",
+    isActive: data.isActive !== false,
+    displayOrder: data.displayOrder || 0,
+  });
+  
+  return result;
+}
+
+export async function getDisplaySections() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db.select().from(displaySections).where(eq(displaySections.isActive, true)).orderBy(asc(displaySections.displayOrder));
+  return result;
+}
+
+export async function getDisplaySectionById(sectionId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(displaySections).where(eq(displaySections.id, sectionId)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function updateDisplaySection(sectionId: number, data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+  
+  await db.update(displaySections).set({
+    name: data.name,
+    nameAr: data.nameAr,
+    description: data.description,
+    descriptionAr: data.descriptionAr,
+    icon: data.icon,
+    displayType: data.displayType,
+    isActive: data.isActive,
+    displayOrder: data.displayOrder,
+  }).where(eq(displaySections.id, sectionId));
+  
+  return { success: true };
+}
+
+export async function deleteDisplaySection(sectionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+  
+  // حذف الربط بين المسلسلات والقسم
+  await db.delete(seriesDisplaySections).where(eq(seriesDisplaySections.displaySectionId, sectionId));
+  
+  // حذف القسم
+  await db.delete(displaySections).where(eq(displaySections.id, sectionId));
+  
+  return { success: true };
+}
+
+export async function addSeriesToDisplaySection(seriesId: number, displaySectionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+  
+  // التحقق من عدم وجود ربط مسبق
+  const existing = await db.select().from(seriesDisplaySections).where(
+    and(
+      eq(seriesDisplaySections.seriesId, seriesId),
+      eq(seriesDisplaySections.displaySectionId, displaySectionId)
+    )
+  ).limit(1);
+  
+  if (existing.length > 0) {
+    return { success: true, message: "المسلسل مضاف بالفعل لهذا القسم" };
+  }
+  
+  await db.insert(seriesDisplaySections).values({
+    seriesId,
+    displaySectionId,
+  });
+  
+  return { success: true };
+}
+
+export async function removeSeriesFromDisplaySection(seriesId: number, displaySectionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+  
+  await db.delete(seriesDisplaySections).where(
+    and(
+      eq(seriesDisplaySections.seriesId, seriesId),
+      eq(seriesDisplaySections.displaySectionId, displaySectionId)
+    )
+  );
+  
+  return { success: true };
+}
+
+export async function getSeriesByDisplaySection(displaySectionId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db.select({
+    series: series,
+    section: displaySections,
+  }).from(seriesDisplaySections)
+    .innerJoin(series, eq(seriesDisplaySections.seriesId, series.id))
+    .innerJoin(displaySections, eq(seriesDisplaySections.displaySectionId, displaySections.id))
+    .where(eq(seriesDisplaySections.displaySectionId, displaySectionId))
+    .orderBy(asc(seriesDisplaySections.displayOrder));
+  
+  return result.map(r => r.series);
+}
+
+export async function getDisplaySectionsWithSeries() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const allSections = await getDisplaySections();
+  
+  const result = await Promise.all(
+    allSections.map(async (section) => {
+      const sectionSeries = await getSeriesByDisplaySection(section.id);
+      return {
+        ...section,
+        series: sectionSeries,
+      };
+    })
+  );
+  
+  return result;
 }

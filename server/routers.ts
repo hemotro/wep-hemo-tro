@@ -16,7 +16,10 @@ import {
   saveWatchHistory, getWatchHistory, getUserSeriesWatchHistory,
   createCategory, getCategories, getCategoryById, updateCategory, deleteCategory,
   addSeriesToCategory, removeSeriesFromCategory, getSeriesByCategory, getCategoriesWithSeries,
-  requestPasswordReset, resetPasswordWithToken, verifyPasswordResetToken, resetPasswordWithCode, verifyPasswordResetCode
+  requestPasswordReset, resetPasswordWithToken, verifyPasswordResetToken, resetPasswordWithCode, verifyPasswordResetCode,
+  createPlatform, getPlatforms, getPlatformById, updatePlatform, deletePlatform,
+  createDisplaySection, getDisplaySections, getDisplaySectionById, updateDisplaySection, deleteDisplaySection,
+  addSeriesToDisplaySection, removeSeriesFromDisplaySection, getSeriesByDisplaySection, getDisplaySectionsWithSeries
 } from "./db";
 import { sendPasswordResetEmail } from "./_core/email";
 import { storagePut } from "./storage";
@@ -1112,6 +1115,198 @@ export const appRouter = router({
       }),
   }),
   
+  // ==================== المنصات (Platforms) ====================
+  platforms: router({
+    list: publicProcedure.query(async () => {
+      return await getPlatforms();
+    }),
+
+    getById: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await getPlatformById(input.id);
+      }),
+
+    create: adminProcedure
+      .input(z.object({
+        name: z.string(),
+        nameAr: z.string(),
+        description: z.string().optional(),
+        descriptionAr: z.string().optional(),
+        icon: z.string().optional(),
+        color: z.string().optional(),
+        displayOrder: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          await createPlatform(input);
+          return { success: true, message: "تم إنشاء المنصة بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل إنشاء المنصة",
+          });
+        }
+      }),
+
+    update: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().optional(),
+        nameAr: z.string().optional(),
+        description: z.string().optional(),
+        descriptionAr: z.string().optional(),
+        icon: z.string().optional(),
+        color: z.string().optional(),
+        isActive: z.boolean().optional(),
+        displayOrder: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const { id, ...data } = input;
+          await updatePlatform(id, data);
+          return { success: true, message: "تم تحديث المنصة بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل تحديث المنصة",
+          });
+        }
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        try {
+          await deletePlatform(input.id);
+          return { success: true, message: "تم حذف المنصة بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل حذف المنصة",
+          });
+        }
+      }),
+  }),
+
+  // ==================== أقسام العرض (Display Sections) ====================
+  displaySections: router({
+    list: publicProcedure.query(async () => {
+      return await getDisplaySections();
+    }),
+
+    listWithSeries: publicProcedure.query(async () => {
+      return await getDisplaySectionsWithSeries();
+    }),
+
+    getById: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await getDisplaySectionById(input.id);
+      }),
+
+    getSeriesBySection: publicProcedure
+      .input(z.object({ displaySectionId: z.number() }))
+      .query(async ({ input }) => {
+        return await getSeriesByDisplaySection(input.displaySectionId);
+      }),
+
+    create: adminProcedure
+      .input(z.object({
+        name: z.string(),
+        nameAr: z.string(),
+        description: z.string().optional(),
+        descriptionAr: z.string().optional(),
+        icon: z.string().optional(),
+        displayType: z.enum(["carousel", "grid", "list"]).optional(),
+        displayOrder: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          await createDisplaySection(input);
+          return { success: true, message: "تم إنشاء قسم العرض بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل إنشاء قسم العرض",
+          });
+        }
+      }),
+
+    update: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().optional(),
+        nameAr: z.string().optional(),
+        description: z.string().optional(),
+        descriptionAr: z.string().optional(),
+        icon: z.string().optional(),
+        displayType: z.enum(["carousel", "grid", "list"]).optional(),
+        isActive: z.boolean().optional(),
+        displayOrder: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const { id, ...data } = input;
+          await updateDisplaySection(id, data);
+          return { success: true, message: "تم تحديث قسم العرض بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل تحديث قسم العرض",
+          });
+        }
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        try {
+          await deleteDisplaySection(input.id);
+          return { success: true, message: "تم حذف قسم العرض بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل حذف قسم العرض",
+          });
+        }
+      }),
+
+    addSeries: adminProcedure
+      .input(z.object({
+        seriesId: z.number(),
+        displaySectionId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          await addSeriesToDisplaySection(input.seriesId, input.displaySectionId);
+          return { success: true, message: "تم إضافة المسلسل لقسم العرض بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل إضافة المسلسل",
+          });
+        }
+      }),
+
+    removeSeries: adminProcedure
+      .input(z.object({
+        seriesId: z.number(),
+        displaySectionId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          await removeSeriesFromDisplaySection(input.seriesId, input.displaySectionId);
+          return { success: true, message: "تم إزالة المسلسل من قسم العرض بنجاح" };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error.message || "فشل إزالة المسلسل",
+          });
+        }
+      }),
+  }),
+
   // ==================== Seed Real Data ====================
   seedRealData: adminProcedure.mutation(async () => {
     try {
