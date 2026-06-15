@@ -355,6 +355,7 @@ export const appRouter = router({
         posterUrl: z.string().optional(),
         totalSeasons: z.number().optional().default(1),
         currentSeason: z.number().optional().default(1),
+        platformId: z.number().optional(),
       }))
       .mutation(async ({ input }) => {
         try {
@@ -368,6 +369,7 @@ export const appRouter = router({
             totalSeasons: input.totalSeasons,
             currentSeason: input.currentSeason,
             totalEpisodes: 0,
+            platformId: input.platformId,
           });
           return { success: true, message: "تم إنشاء المسلسل بنجاح" };
         } catch (error: any) {

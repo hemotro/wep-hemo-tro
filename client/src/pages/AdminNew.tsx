@@ -102,7 +102,13 @@ export function AdminNew() {
     genre: "",
     posterUrl: "",
     status: "ongoing" as "ongoing" | "completed",
+    platformId: "",
+    displaySectionId: "",
   });
+
+  // جلب المنصات والأقسام
+  const { data: platforms } = trpc.platforms.list.useQuery();
+  const { data: displaySections } = trpc.displaySections.list.useQuery();
 
   const handleCreateSeries = async () => {
     if (!seriesForm.titleAr) {
@@ -116,14 +122,15 @@ export function AdminNew() {
         descriptionAr: seriesForm.descriptionAr,
         genre: seriesForm.genre,
         posterUrl: seriesForm.posterUrl,
+        platformId: seriesForm.platformId ? parseInt(seriesForm.platformId) : undefined,
       });
       toast.success("تم إضافة المسلسل بنجاح");
-      setSeriesForm({ titleAr: "", descriptionAr: "", genre: "", posterUrl: "", status: "ongoing" });
+      setSeriesForm({ titleAr: "", descriptionAr: "", genre: "", posterUrl: "", status: "ongoing", platformId: "", displaySectionId: "" });
       refetchSeries();
     } catch (error) {
       toast.error("حدث خطأ في إضافة المسلسل");
     }
-  };
+  }
 
   const handleDeleteSeries = async (id: number) => {
     if (!confirm("هل أنت متأكد من حذف هذا المسلسل؟")) return;
@@ -306,6 +313,18 @@ export function AdminNew() {
                   value={seriesForm.posterUrl}
                   onChange={(e) => setSeriesForm({ ...seriesForm, posterUrl: e.target.value })}
                 />
+                <select
+                  value={seriesForm.platformId}
+                  onChange={(e) => setSeriesForm({ ...seriesForm, platformId: e.target.value })}
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                >
+                  <option value="">اختر المنصة (اختياري)</option>
+                  {platforms?.map((platform) => (
+                    <option key={platform.id} value={platform.id}>
+                      {platform.nameAr}
+                    </option>
+                  ))}
+                </select>
                 <Button onClick={handleCreateSeries} className="w-full">
                   <Plus className="w-4 h-4 mr-2" />
                   إضافة مسلسل
