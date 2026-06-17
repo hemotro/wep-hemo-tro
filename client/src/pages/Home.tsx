@@ -150,35 +150,38 @@ export default function Home() {
       {latestSeries && latestSeries.length > 0 && (
         <section className="px-3 sm:px-6 md:px-10 lg:px-16 py-8 sm:py-12 bg-background">
           <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-4 sm:mb-6">المسلسلات الجديدة</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3 md:gap-4">
-            {latestSeries.map((series: any) => (
-              <Link key={series.id} href={`/series/${series.id}`}>
-                <div className="group cursor-pointer">
-                  <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full">
-                    <CardContent className="p-0">
-                      {/* صورة المسلسل */}
-                      <div className="relative overflow-hidden bg-muted aspect-[2/3]">
-                        <img
-                          src={series.posterUrl}
-                          alt={series.titleAr}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                        />
-                        {/* overlay عند التمرير */}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                          <Play className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+          {/* عرض أفقي - scroll horizontal */}
+          <div className="overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2 sm:gap-3 md:gap-4 pb-2">
+              {latestSeries.map((series: any) => (
+                <Link key={series.id} href={`/series/${series.id}`}>
+                  <div className="group cursor-pointer flex-shrink-0">
+                    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full">
+                      <CardContent className="p-0">
+                        {/* صورة المسلسل - حجم صغير */}
+                        <div className="relative overflow-hidden bg-muted aspect-[2/3] w-24 sm:w-28 md:w-32 lg:w-36">
+                          <img
+                            src={series.posterUrl}
+                            alt={series.titleAr}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                          {/* overlay عند التمرير */}
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                            <Play className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                          </div>
                         </div>
-                      </div>
-                      {/* معلومات المسلسل */}
-                      <div className="p-2 sm:p-3 bg-card">
-                        <h4 className="font-semibold text-xs sm:text-sm text-card-foreground truncate">
-                          {series.titleAr}
-                        </h4>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </Link>
-            ))}
+                        {/* معلومات المسلسل */}
+                        <div className="p-2 bg-card hidden sm:block">
+                          <h4 className="font-semibold text-xs text-card-foreground truncate">
+                            {series.titleAr}
+                          </h4>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
       )}
@@ -187,39 +190,42 @@ export default function Home() {
       {topRatedSeries && topRatedSeries.length > 0 && (
         <section className="px-3 sm:px-6 md:px-10 lg:px-16 py-8 sm:py-12 bg-muted/30">
           <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-4 sm:mb-6">الأعلى تقييماً</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
-            {topRatedSeries.map((series: any) => (
-              <Link key={series.id} href={`/series/${series.id}`}>
-                <div className="group cursor-pointer">
-                  <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full">
-                    <CardContent className="p-0">
-                      {/* صورة المسلسل */}
-                      <div className="relative overflow-hidden bg-muted aspect-[2/3]">
-                        <img
-                          src={series.posterUrl}
-                          alt={series.titleAr}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                        />
-                        {/* overlay عند التمرير */}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                          <Play className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+          {/* عرض أفقي - scroll horizontal */}
+          <div className="overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2 sm:gap-3 md:gap-4 pb-2">
+              {topRatedSeries.map((series: any) => (
+                <Link key={series.id} href={`/series/${series.id}`}>
+                  <div className="group cursor-pointer flex-shrink-0">
+                    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full">
+                      <CardContent className="p-0">
+                        {/* صورة المسلسل - حجم صغير */}
+                        <div className="relative overflow-hidden bg-muted aspect-[2/3] w-24 sm:w-28 md:w-32 lg:w-36">
+                          <img
+                            src={series.posterUrl}
+                            alt={series.titleAr}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                          {/* overlay عند التمرير */}
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                            <Play className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                          </div>
                         </div>
-                      </div>
-                      {/* معلومات المسلسل */}
-                      <div className="p-2 sm:p-3 bg-card">
-                        <h4 className="font-semibold text-xs sm:text-sm text-card-foreground truncate">
-                          {series.titleAr}
-                        </h4>
-                        <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                          <Heart className="w-3 h-3 sm:w-4 sm:h-4 fill-red-500 text-red-500" />
-                          <span>محبوب</span>
+                        {/* معلومات المسلسل */}
+                        <div className="p-2 bg-card hidden sm:block">
+                          <h4 className="font-semibold text-xs text-card-foreground truncate">
+                            {series.titleAr}
+                          </h4>
+                          <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                            <Heart className="w-3 h-3 fill-red-500 text-red-500" />
+                            <span>محبوب</span>
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </Link>
-            ))}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
       )}
@@ -230,6 +236,17 @@ export default function Home() {
           <p className="text-muted-foreground text-lg">لا توجد مسلسلات متاحة حالياً</p>
         </div>
       )}
+
+      {/* إضافة CSS مخصص لإخفاء scrollbar */}
+      <style>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </div>
   );
 }
