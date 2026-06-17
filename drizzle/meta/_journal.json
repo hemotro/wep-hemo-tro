@@ -162,6 +162,13 @@
       "when": 1781217957316,
       "tag": "0022_mixed_overlord",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1781688061536,
+      "tag": "0023_nasty_smasher",
+      "breakpoints": true
     }
   ]
 }

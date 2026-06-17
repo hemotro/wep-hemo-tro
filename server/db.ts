@@ -1,6 +1,7 @@
 import { eq, and, asc, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, InsertFavorite, seriesImages, InsertSeriesImage, channels, Channel, InsertChannel, uploadedVideos, watchHistory, InsertWatchHistory, categories, seriesCategories, Category, InsertCategory, slider, platforms, Platform, InsertPlatform, displaySections, DisplaySection, InsertDisplaySection, seriesDisplaySections, SeriesDisplaySection, InsertSeriesDisplaySection } from "../drizzle/schema";
+import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, InsertFavorite, seriesImages, InsertSeriesImage, channels, Channel, InsertChannel, uploadedVideos, watchHistory, InsertWatchHistory, categories, seriesCategories, Category, InsertCategory, slider, platforms, Platform, InsertPlatform, displaySections, DisplaySection, InsertDisplaySection, seriesDisplaySections, SeriesDisplaySection, InsertSeriesDisplaySection, likes } from "../drizzle/schema";
+import { count, desc } from "drizzle-orm";
 import { ENV } from './_core/env';
 import bcrypt from "bcrypt";
 
@@ -1201,4 +1202,77 @@ export async function getDisplaySectionsWithSeries() {
   );
   
   return result;
+}
+
+
+// ==================== الإعجابات ====================
+
+export async function addLike(userId: number, seriesId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+  
+  // التحقق من عدم وجود إعجاب سابق
+  const existing = await db.select().from(likes).where(
+    and(eq(likes.userId, userId), eq(likes.seriesId, seriesId))
+  );
+  
+  if (existing.length > 0) {
+    return { success: false, message: "تم الإعجاب بهذا المسلسل مسبقاً" };
+  }
+  
+  await db.insert(likes).values({ userId, seriesId });
+  return { success: true };
+}
+
+export async function removeLike(userId: number, seriesId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("قاعدة البيانات غير متاحة");
+  
+  await db.delete(likes).where(
+    and(eq(likes.userId, userId), eq(likes.seriesId, seriesId))
+  );
+  return { success: true };
+}
+
+export async function getLikeCount(seriesId: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  
+  const result = await db.select({ count: count() }).from(likes).where(eq(likes.seriesId, seriesId));
+  return result[0]?.count || 0;
+}
+
+export async function isLikedByUser(userId: number, seriesId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  
+  const result = await db.select().from(likes).where(
+    and(eq(likes.userId, userId), eq(likes.seriesId, seriesId))
+  );
+  return result.length > 0;
+}
+
+export async function getTopRatedSeries(limit: number = 5) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db.select({
+    series: series,
+    likeCount: count(likes.id),
+  }).from(series)
+    .leftJoin(likes, eq(series.id, likes.seriesId))
+    .groupBy(series.id)
+    .orderBy(desc(count(likes.id)))
+    .limit(limit);
+  
+  return result.map(r => r.series);
+}
+
+export async function getLatestSeries(limit: number = 6) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(series)
+    .orderBy(desc(series.createdAt))
+    .limit(limit);
 }

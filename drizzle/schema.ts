@@ -313,3 +313,17 @@ export const seriesDisplaySections = mysqlTable("seriesDisplaySections", {
 
 export type SeriesDisplaySection = typeof seriesDisplaySections.$inferSelect;
 export type InsertSeriesDisplaySection = typeof seriesDisplaySections.$inferInsert;
+
+
+/**
+ * جدول الإعجابات - يتتبع إعجابات المستخدمين بالمسلسلات
+ */
+export const likes = mysqlTable("likes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  seriesId: int("seriesId").notNull().references(() => series.id, { onDelete: "cascade" }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Like = typeof likes.$inferSelect;
+export type InsertLike = typeof likes.$inferInsert;
