@@ -32,6 +32,37 @@ function FavoriteButton({ seriesId }: { seriesId: number }) {
   );
 }
 
+function LikeButton({ seriesId }: { seriesId: number }) {
+  const { data: isLiked } = trpc.likes.isLiked.useQuery({ seriesId });
+  const { data: likeCount } = trpc.likes.getLikeCount.useQuery({ seriesId });
+  const addLike = trpc.likes.addLike.useMutation();
+  const removeLike = trpc.likes.removeLike.useMutation();
+
+  const handleToggle = async () => {
+    try {
+      if (isLiked) {
+        await removeLike.mutateAsync({ seriesId });
+      } else {
+        await addLike.mutateAsync({ seriesId });
+      }
+    } catch (error) {
+      console.error("خطأ في تحديث الإعجاب:", error);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleToggle}
+      className={`p-2 rounded-full transition-colors flex items-center gap-2 ${
+        isLiked ? "bg-pink-500 text-white" : "bg-muted text-muted-foreground hover:bg-pink-500 hover:text-white"
+      }`}
+    >
+      <Heart size={20} fill={isLiked ? "currentColor" : "none"} />
+      <span className="text-xs font-semibold">{likeCount || 0}</span>
+    </button>
+  );
+}
+
 export default function SeriesDetail() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
@@ -87,7 +118,10 @@ export default function SeriesDetail() {
               <h1 className="text-3xl font-bold text-foreground mb-2">{series.titleAr}</h1>
               <p className="text-primary text-sm mb-4">{series.genre}</p>
             </div>
-            <FavoriteButton seriesId={seriesId} />
+            <div className="flex gap-2">
+              <FavoriteButton seriesId={seriesId} />
+              <LikeButton seriesId={seriesId} />
+            </div>
           </div>
           
           {/* الوصف */}

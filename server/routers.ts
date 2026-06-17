@@ -19,7 +19,8 @@ import {
   requestPasswordReset, resetPasswordWithToken, verifyPasswordResetToken, resetPasswordWithCode, verifyPasswordResetCode,
   createPlatform, getPlatforms, getPlatformById, updatePlatform, deletePlatform,
   createDisplaySection, getDisplaySections, getDisplaySectionById, updateDisplaySection, deleteDisplaySection,
-  addSeriesToDisplaySection, removeSeriesFromDisplaySection, getSeriesByDisplaySection, getDisplaySectionsWithSeries
+  addSeriesToDisplaySection, removeSeriesFromDisplaySection, getSeriesByDisplaySection, getDisplaySectionsWithSeries,
+  addLike, removeLike, getLikeCount, isLikedByUser, getTopRatedSeries, getLatestSeries
 } from "./db";
 import { sendPasswordResetEmail } from "./_core/email";
 import { storagePut } from "./storage";
@@ -1393,6 +1394,51 @@ export const appRouter = router({
         message: error.message || "فشل إضافة البيانات",
       });
     }
+  }),
+  // ==================== Likes ====================
+  likes: router({
+    addLike: protectedProcedure
+      .input(z.object({ seriesId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user?.id) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        const result = await addLike(ctx.user.id, input.seriesId);
+        if (!result.success) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: result.message });
+        }
+        return result;
+      }),
+    
+    removeLike: protectedProcedure
+      .input(z.object({ seriesId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user?.id) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        return await removeLike(ctx.user.id, input.seriesId);
+      }),
+    
+    getLikeCount: publicProcedure
+      .input(z.object({ seriesId: z.number() }))
+      .query(async ({ input }) => {
+        return await getLikeCount(input.seriesId);
+      }),
+    
+    isLiked: protectedProcedure
+      .input(z.object({ seriesId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        if (!ctx.user?.id) return false;
+        return await isLikedByUser(ctx.user.id, input.seriesId);
+      }),
+    
+    getTopRated: publicProcedure
+      .input(z.object({ limit: z.number().default(5) }))
+      .query(async ({ input }) => {
+        return await getTopRatedSeries(input.limit);
+      }),
+    
+    getLatest: publicProcedure
+      .input(z.object({ limit: z.number().default(6) }))
+      .query(async ({ input }) => {
+        return await getLatestSeries(input.limit);
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;

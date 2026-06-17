@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Play, ChevronLeft, ChevronRight } from "lucide-react";
+import { Play, ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Home() {
@@ -12,9 +12,10 @@ export default function Home() {
   const [autoPlay, setAutoPlay] = useState(true);
   const [scrollY, setScrollY] = useState(0);
 
-  // استدعاء البيانات
+  // استدعاء البيانات الديناميكية
+  const { data: latestSeries, isLoading: latestLoading } = trpc.likes.getLatest.useQuery({ limit: 6 });
+  const { data: topRatedSeries, isLoading: topRatedLoading } = trpc.likes.getTopRated.useQuery({ limit: 5 });
   const { data: sliderData, isLoading: sliderLoading } = trpc.slider.list.useQuery();
-  const { data: categories, isLoading: categoriesLoading } = trpc.categories.list.useQuery();
   const { data: seriesList, isLoading: seriesLoading } = trpc.series.list.useQuery();
 
   // معالجة التمرير
@@ -24,25 +25,21 @@ export default function Home() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // تحديد السلاسل المراد عرضها في السلايدر
-  const displaySeries = sliderData && sliderData.length > 0
-    ? sliderData.map((slider: any) => 
-        seriesList?.find((s: any) => s.id === slider.seriesId)
-      ).filter(Boolean)
-    : [];
+  // تحديد آخر 4 مسلسلات للسلايدر
+  const sliderSeries = latestSeries?.slice(0, 4) || [];
 
   // تحديث الشريحة تلقائياً
   useEffect(() => {
-    if (!autoPlay || displaySeries.length === 0) return;
+    if (!autoPlay || sliderSeries.length === 0) return;
 
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % displaySeries.length);
+      setCurrentSlide((prev) => (prev + 1) % sliderSeries.length);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [autoPlay, displaySeries.length]);
+  }, [autoPlay, sliderSeries.length]);
 
-  if (sliderLoading || categoriesLoading || seriesLoading) {
+  if (latestLoading || topRatedLoading || sliderLoading || seriesLoading) {
     return (
       <div className="flex-1 pb-20 flex items-center justify-center min-h-screen">
         <p className="text-muted-foreground">جاري تحميل البيانات...</p>
@@ -50,7 +47,7 @@ export default function Home() {
     );
   }
 
-  const currentSeries = displaySeries[currentSlide];
+  const currentSeries = sliderSeries[currentSlide];
   const currentBanner = currentSeries?.posterUrl;
 
   // حساب Parallax offset
@@ -58,9 +55,9 @@ export default function Home() {
 
   return (
     <div className="flex-1 pb-20">
-      {/* السلايدر الرئيسي */}
-      <div className="relative w-full overflow-hidden">
-        {displaySeries && displaySeries.length > 0 && currentSeries ? (
+      {/* السلايدر الرئيسي - آخر 4 مسلسلات */}
+      {sliderSeries && sliderSeries.length > 0 && currentSeries ? (
+        <div className="relative w-full overflow-hidden">
           <div className="relative w-full h-screen max-h-[600px] overflow-hidden">
             {/* الخلفية مع Parallax */}
             <div
@@ -96,123 +93,105 @@ export default function Home() {
             </div>
 
             {/* أزرار التنقل */}
-            {displaySeries.length > 1 && (
+            {sliderSeries.length > 1 && (
               <>
                 <button
-                  onClick={() => {
-                    setCurrentSlide((prev) => (prev - 1 + displaySeries.length) % displaySeries.length);
-                    setAutoPlay(false);
-                  }}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-white/20 hover:bg-white/40 p-2 rounded-full transition-all"
-                  aria-label="الشريحة السابقة"
+                  onClick={() => setCurrentSlide((prev) => (prev - 1 + sliderSeries.length) % sliderSeries.length)}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full transition-all"
                 >
-                  <ChevronLeft className="w-6 h-6 text-white" />
+                  <ChevronRight className="w-6 h-6" />
                 </button>
                 <button
-                  onClick={() => {
-                    setCurrentSlide((prev) => (prev + 1) % displaySeries.length);
-                    setAutoPlay(false);
-                  }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-white/20 hover:bg-white/40 p-2 rounded-full transition-all"
-                  aria-label="الشريحة التالية"
+                  onClick={() => setCurrentSlide((prev) => (prev + 1) % sliderSeries.length)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full transition-all"
                 >
-                  <ChevronRight className="w-6 h-6 text-white" />
+                  <ChevronLeft className="w-6 h-6" />
                 </button>
-              </>
-            )}
 
-            {/* مؤشرات الشرائح */}
-            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-              {displaySeries.map((_: any, index: number) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    setCurrentSlide(index);
-                    setAutoPlay(false);
-                  }}
-                  className={`rounded-full transition-all ${
-                    index === currentSlide
-                      ? "bg-primary w-6 h-2"
-                      : "bg-white/50 hover:bg-white/70 w-2 h-2"
-                  }`}
-                  aria-label={`انتقل إلى الشريحة ${index + 1}`}
-                />
-              ))}
-            </div>
-          </div>
-        ) : null}
-      </div>
-
-      {/* عرض الأقسام */}
-      {categories && categories.length > 0 && seriesList && (
-        <div className="space-y-8 px-4 sm:px-8 md:px-12 py-12 max-w-7xl mx-auto">
-          {categories.map((category: any) => {
-            const categorySeriesList = seriesList?.filter(
-              (series: any) => (series as any).categoryId === category.id
-            ) || [];
-
-            if (categorySeriesList.length === 0) return null;
-
-            return (
-              <div key={category.id} className="space-y-4">
-                <h3 className="text-2xl font-bold text-foreground">{category.titleAr}</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {categorySeriesList.map((series: any) => (
+                {/* مؤشرات الشرائح */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+                  {sliderSeries.map((_, index) => (
                     <button
-                      key={series.id}
-                      onClick={() => {
-                        setLocation(`/series/${series.id}`);
-                        window.scrollTo(0, 0);
-                      }}
-                      className="group relative overflow-hidden rounded-lg transition-all duration-300 hover:ring-2 hover:ring-primary/50 active:scale-95"
-                    >
-                      {/* صورة المسلسل */}
-                      <div className="relative w-full bg-muted overflow-hidden rounded-lg" style={{ aspectRatio: "3 / 4" }}>
-                        {series.posterUrl ? (
-                          <img
-                            src={series.posterUrl}
-                            alt={series.titleAr}
-                            className="w-full h-full object-cover group-hover:brightness-75 transition-all duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                            <span className="text-center text-muted-foreground text-sm px-2">
-                              {series.titleAr}
-                            </span>
-                          </div>
-                        )}
-
-                        {/* overlay عند التمرير */}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                          <div className="bg-primary/90 p-2.5 rounded-full">
-                            <svg
-                              className="w-5 h-5 text-white fill-white"
-                              viewBox="0 0 24 24"
-                            >
-                              <path d="M8 5v14l11-7z" />
-                            </svg>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* معلومات المسلسل */}
-                      <div className="mt-3">
-                        <p className="font-semibold text-foreground text-sm line-clamp-2">{series.titleAr}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{series.totalSeasons || 0} موسم</p>
-                      </div>
-                    </button>
+                      key={index}
+                      onClick={() => setCurrentSlide(index)}
+                      className={`w-2 h-2 rounded-full transition-all ${
+                        index === currentSlide ? "bg-primary w-8" : "bg-white/50"
+                      }`}
+                    />
                   ))}
                 </div>
-              </div>
-            );
-          })}
+              </>
+            )}
+          </div>
         </div>
+      ) : null}
+
+      {/* القسم الثاني: المسلسلات الجديدة - آخر 6 مسلسلات */}
+      {latestSeries && latestSeries.length > 0 && (
+        <section className="px-4 sm:px-8 md:px-12 py-12 bg-background">
+          <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-6">المسلسلات الجديدة</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {latestSeries.map((series: any) => (
+              <Link key={series.id} href={`/series/${series.id}`}>
+                <a>
+                  <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                    <CardContent className="p-0">
+                      <img
+                        src={series.posterUrl}
+                        alt={series.titleAr}
+                        className="w-full h-64 object-cover"
+                      />
+                      <div className="p-3 bg-card">
+                        <h4 className="font-semibold text-sm text-card-foreground truncate">
+                          {series.titleAr}
+                        </h4>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </a>
+              </Link>
+            ))}
+          </div>
+        </section>
       )}
 
-      {/* حالة عدم وجود بيانات */}
-      {(!categories || categories.length === 0) && !categoriesLoading && (
-        <div className="flex-1 flex items-center justify-center min-h-screen">
-          <p className="text-muted-foreground">لا توجد بيانات متاحة حالياً</p>
+      {/* القسم الثالث: الأعلى تقييماً - أفضل 5 مسلسلات */}
+      {topRatedSeries && topRatedSeries.length > 0 && (
+        <section className="px-4 sm:px-8 md:px-12 py-12 bg-muted/30">
+          <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-6">الأعلى تقييماً</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {topRatedSeries.map((series: any) => (
+              <Link key={series.id} href={`/series/${series.id}`}>
+                <a>
+                  <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                    <CardContent className="p-0">
+                      <img
+                        src={series.posterUrl}
+                        alt={series.titleAr}
+                        className="w-full h-64 object-cover"
+                      />
+                      <div className="p-3 bg-card">
+                        <h4 className="font-semibold text-sm text-card-foreground truncate">
+                          {series.titleAr}
+                        </h4>
+                        <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                          <Heart className="w-4 h-4 fill-red-500 text-red-500" />
+                          <span>محبوب</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </a>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* رسالة عندما لا توجد بيانات */}
+      {(!latestSeries || latestSeries.length === 0) && (
+        <div className="flex-1 pb-20 flex items-center justify-center min-h-[400px]">
+          <p className="text-muted-foreground text-lg">لا توجد مسلسلات متاحة حالياً</p>
         </div>
       )}
     </div>
