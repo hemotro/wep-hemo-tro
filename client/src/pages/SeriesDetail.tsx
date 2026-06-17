@@ -33,33 +33,45 @@ function FavoriteButton({ seriesId }: { seriesId: number }) {
 }
 
 function LikeButton({ seriesId }: { seriesId: number }) {
-  const { data: isLiked } = trpc.likes.isLiked.useQuery({ seriesId });
+  const { data: isLiked, isLoading: isCheckingLike } = trpc.likes.isLiked.useQuery({ seriesId });
   const { data: likeCount } = trpc.likes.getLikeCount.useQuery({ seriesId });
   const addLike = trpc.likes.addLike.useMutation();
   const removeLike = trpc.likes.removeLike.useMutation();
+  const [error, setError] = useState<string | null>(null);
+
+  const isLoading = addLike.isPending || removeLike.isPending || isCheckingLike;
 
   const handleToggle = async () => {
+    setError(null);
     try {
       if (isLiked) {
         await removeLike.mutateAsync({ seriesId });
       } else {
         await addLike.mutateAsync({ seriesId });
       }
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error?.message || "خطأ في تحديث الإعجاب";
+      setError(errorMessage);
       console.error("خطأ في تحديث الإعجاب:", error);
     }
   };
 
   return (
-    <button
-      onClick={handleToggle}
-      className={`p-2 rounded-full transition-colors flex items-center gap-2 ${
-        isLiked ? "bg-pink-500 text-white" : "bg-muted text-muted-foreground hover:bg-pink-500 hover:text-white"
-      }`}
-    >
-      <Heart size={20} fill={isLiked ? "currentColor" : "none"} />
-      <span className="text-xs font-semibold">{likeCount || 0}</span>
-    </button>
+    <div className="flex flex-col gap-1">
+      <button
+        onClick={handleToggle}
+        disabled={isLoading}
+        className={`p-2 rounded-full transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+          isLiked ? "bg-pink-500 text-white" : "bg-muted text-muted-foreground hover:bg-pink-500 hover:text-white"
+        }`}
+      >
+        <Heart size={20} fill={isLiked ? "currentColor" : "none"} />
+        <span className="text-xs font-semibold">{likeCount || 0}</span>
+      </button>
+      {error && (
+        <p className="text-xs text-red-500">{error}</p>
+      )}
+    </div>
   );
 }
 
