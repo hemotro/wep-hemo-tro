@@ -169,6 +169,13 @@
       "when": 1781688061536,
       "tag": "0023_nasty_smasher",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1783076702017,
+      "tag": "0024_smart_riptide",
+      "breakpoints": true
     }
   ]
 }

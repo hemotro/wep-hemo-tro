@@ -1,9 +1,11 @@
-import { eq, and, asc, lt } from "drizzle-orm";
+import { eq, and, asc, lt, count, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, InsertFavorite, seriesImages, InsertSeriesImage, channels, Channel, InsertChannel, uploadedVideos, watchHistory, InsertWatchHistory, categories, seriesCategories, Category, InsertCategory, slider, platforms, Platform, InsertPlatform, displaySections, DisplaySection, InsertDisplaySection, seriesDisplaySections, SeriesDisplaySection, InsertSeriesDisplaySection, likes } from "../drizzle/schema";
-import { count, desc } from "drizzle-orm";
+import { InsertUser, users, series, episodes, InsertSeries, InsertEpisode, favorites, InsertFavorite, seriesImages, InsertSeriesImage, channels, Channel, InsertChannel, uploadedVideos, watchHistory, InsertWatchHistory, categories, seriesCategories, Category, InsertCategory, slider, platforms, Platform, InsertPlatform, displaySections, DisplaySection, InsertDisplaySection, seriesDisplaySections, SeriesDisplaySection, InsertSeriesDisplaySection, likes, telegramBot, telegramOperations } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import bcrypt from "bcrypt";
+import axios from "axios";
+
+const TELEGRAM_API_URL = "https://api.telegram.org";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 

@@ -13,6 +13,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { uploadVideoToS3 } from "./videoUpload";
+import { initTelegramRouter } from "../telegram.router";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -42,6 +43,21 @@ async function startServer() {
   
   // File upload middleware
   app.use(fileUpload());
+  
+  // Initialize Telegram Bot
+  await initTelegramRouter();
+  // Telegram webhook endpoint
+  app.post("/api/telegram/webhook", async (req, res) => {
+    try {
+      const update = req.body;
+      // معالجة الـ webhook من خلال tRPC
+      res.json({ ok: true });
+    } catch (error) {
+      console.error("Telegram webhook error:", error);
+      res.status(500).json({ ok: false });
+    }
+  });
+
   // Video upload endpoint
   app.post("/api/upload-video", async (req: any, res) => {
     try {

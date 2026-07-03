@@ -327,3 +327,40 @@ export const likes = mysqlTable("likes", {
 
 export type Like = typeof likes.$inferSelect;
 export type InsertLike = typeof likes.$inferInsert;
+
+/**
+ * جدول Telegram Bot - لتخزين بيانات البوت والمستخدمين
+ */
+export const telegramBot = mysqlTable("telegramBot", {
+  id: int("id").autoincrement().primaryKey(),
+  botToken: varchar("botToken", { length: 255 }).notNull().unique(),
+  botUsername: varchar("botUsername", { length: 255 }),
+  authorizedChatIds: text("authorizedChatIds"), // JSON array of authorized chat IDs
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TelegramBot = typeof telegramBot.$inferSelect;
+export type InsertTelegramBot = typeof telegramBot.$inferInsert;
+
+/**
+ * جدول تتبع عمليات Telegram - لتخزين معرفات الرسائل والحالات
+ */
+export const telegramOperations = mysqlTable("telegramOperations", {
+  id: int("id").autoincrement().primaryKey(),
+  chatId: varchar("chatId", { length: 50 }).notNull(),
+  userId: varchar("userId", { length: 50 }).notNull(),
+  operationType: mysqlEnum("operationType", ["add_series", "add_episode", "upload_video", "add_image"]).notNull(),
+  status: mysqlEnum("status", ["pending", "in_progress", "completed", "failed"]).default("pending"),
+  data: text("data"), // JSON data for the operation
+  messageId: varchar("messageId", { length: 50 }),
+  seriesId: int("seriesId"), // المسلسل المرتبط بالعملية
+  episodeId: int("episodeId"), // الحلقة المرتبطة بالعملية
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TelegramOperation = typeof telegramOperations.$inferSelect;
+export type InsertTelegramOperation = typeof telegramOperations.$inferInsert;
