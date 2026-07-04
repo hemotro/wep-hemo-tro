@@ -24,20 +24,37 @@ export default function VideoPlayer({ videoUrl, video480pUrl, video720pUrl, vide
     setError(null);
     setLoading(false);
 
-    if (videoType === "telegram" && videoUrl) {
+    if (!videoUrl) {
+      console.log('⚠️ No video URL provided');
+      setActualUrl(null);
+      return;
+    }
+
+    console.log('📥 VideoPlayer received:', { videoUrl, videoType });
+
+    if (videoType === "telegram") {
       // استخدام proxy endpoint للفيديو من Telegram
       // الـ proxy يسحب الفيديو من Telegram ويعيده للمتصفح
       const proxyUrl = `/api/telegram/video/${encodeURIComponent(videoUrl)}`;
+      console.log('🎬 Telegram video - converting to proxy URL');
+      console.log('   file_id:', videoUrl);
+      console.log('   proxy URL:', proxyUrl);
       setActualUrl(proxyUrl);
-    } else if (videoUrl) {
+    } else {
       // للفيديوهات الأخرى (MP4, HLS, YouTube)
+      console.log('📹 Non-Telegram video, using URL directly');
       setActualUrl(videoUrl);
     }
   }, [videoUrl, videoType]);
 
   // إعداد مشغل الفيديو
   useEffect(() => {
-    if (!actualUrl) return;
+    if (!actualUrl) {
+      console.log('⚠️ No actual URL set, skipping player setup');
+      return;
+    }
+
+    console.log('🎮 Setting up player with URL:', actualUrl);
 
     // تحميل مكتبات Plyr و HLS من CDN
     const loadScripts = async () => {
@@ -75,7 +92,10 @@ export default function VideoPlayer({ videoUrl, video480pUrl, video720pUrl, vide
 
       // إعداد المشغل
       if (videoRef.current && window.Plyr) {
+        console.log('✅ Plyr loaded, setting up player');
         setupPlayer(actualUrl);
+      } else {
+        console.log('⚠️ Missing videoRef or Plyr');
       }
     };
 
@@ -89,7 +109,11 @@ export default function VideoPlayer({ videoUrl, video480pUrl, video720pUrl, vide
   }, [actualUrl]);
 
   const setupPlayer = (url: string) => {
-    if (!videoRef.current || !window.Plyr) return;
+    console.log('🎬 setupPlayer called with URL:', url);
+    if (!videoRef.current || !window.Plyr) {
+      console.error('❌ Missing videoRef or Plyr');
+      return;
+    }
 
     const isHls = url.endsWith('.m3u8');
 
@@ -115,6 +139,7 @@ export default function VideoPlayer({ videoUrl, video480pUrl, video720pUrl, vide
       });
     } else {
       // فيديو عادي MP4 أو من Telegram Proxy
+      console.log('📹 Setting video src:', url);
       videoRef.current.src = url;
       videoRef.current.setAttribute('controls', 'true');
 
@@ -138,6 +163,8 @@ export default function VideoPlayer({ videoUrl, video480pUrl, video720pUrl, vide
         settings: ['speed'],
         speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
       });
+
+      console.log('✅ Player initialized successfully');
     }
   };
 
