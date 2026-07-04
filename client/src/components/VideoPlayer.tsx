@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { trpc } from '@/lib/trpc';
 
 interface VideoPlayerProps {
   videoUrl: string;
@@ -16,44 +15,28 @@ export default function VideoPlayer({ videoUrl, video480pUrl, video720pUrl, vide
   const videoRef = useRef<HTMLVideoElement>(null);
   const plyrRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [telegramVideoUrl, setTelegramVideoUrl] = useState<string | null>(null);
+  const [actualUrl, setActualUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // جلب رابط الفيديو من Telegram
+  // تحويل file_id إلى proxy URL للفيديوهات من Telegram
   useEffect(() => {
+    setError(null);
+    setLoading(false);
+
     if (videoType === "telegram" && videoUrl) {
-      const fetchTelegramUrl = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-          // استدعاء API للحصول على رابط الفيديو من Telegram
-          const response = await fetch(`/api/get-telegram-video?fileId=${encodeURIComponent(videoUrl)}`);
-          if (!response.ok) {
-            throw new Error("فشل جلب الفيديو من Telegram");
-          }
-          const data = await response.json();
-          setTelegramVideoUrl(data.url);
-        } catch (err) {
-          setError(err instanceof Error ? err.message : "خطأ في جلب الفيديو");
-          console.error("Error fetching Telegram video:", err);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchTelegramUrl();
+      // استخدام proxy endpoint للفيديو من Telegram
+      // الـ proxy يسحب الفيديو من Telegram ويعيده للمتصفح
+      const proxyUrl = `/api/telegram/video/${encodeURIComponent(videoUrl)}`;
+      setActualUrl(proxyUrl);
+    } else if (videoUrl) {
+      // للفيديوهات الأخرى (MP4, HLS, YouTube)
+      setActualUrl(videoUrl);
     }
   }, [videoUrl, videoType]);
 
   // إعداد مشغل الفيديو
   useEffect(() => {
-    // إذا كان نوع الفيديو Telegram وليس لدينا الرابط بعد
-    if (videoType === "telegram" && !telegramVideoUrl) {
-      return;
-    }
-
-    // تحديد الرابط الفعلي للفيديو
-    const actualUrl = videoType === "telegram" ? telegramVideoUrl : videoUrl;
     if (!actualUrl) return;
 
     // تحميل مكتبات Plyr و HLS من CDN
@@ -103,7 +86,7 @@ export default function VideoPlayer({ videoUrl, video480pUrl, video720pUrl, vide
         plyrRef.current.destroy();
       }
     };
-  }, [telegramVideoUrl, videoUrl, videoType]);
+  }, [actualUrl]);
 
   const setupPlayer = (url: string) => {
     if (!videoRef.current || !window.Plyr) return;
@@ -131,7 +114,7 @@ export default function VideoPlayer({ videoUrl, video480pUrl, video720pUrl, vide
         speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
       });
     } else {
-      // فيديو عادي MP4
+      // فيديو عادي MP4 أو من Telegram Proxy
       videoRef.current.src = url;
       videoRef.current.setAttribute('controls', 'true');
 

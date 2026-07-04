@@ -15,6 +15,7 @@ import { serveStatic, setupVite } from "./vite";
 import { uploadVideoToS3 } from "./videoUpload";
 import { initTelegramRouter } from "../telegram.router";
 import { setupGetTelegramVideoHandler } from "./get-telegram-video";
+import { setupTelegramVideoProxy } from "./telegram-proxy";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -50,6 +51,7 @@ async function startServer() {
   
   // Setup handlers
   setupGetTelegramVideoHandler(app);
+  setupTelegramVideoProxy(app);
   
   // Telegram webhook endpoint
   app.post("/api/telegram/webhook", async (req, res) => {

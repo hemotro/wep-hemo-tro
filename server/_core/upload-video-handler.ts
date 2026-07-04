@@ -58,9 +58,10 @@ export function setupUploadVideoHandler(app: Express) {
       );
 
       // إنشاء الحلقة في قاعدة البيانات
-      // استخدم S3 URL إن توفر، وإلا استخدم Telegram fileId
-      const videoUrl = uploadResult.s3Url || uploadResult.fileId;
-      const videoType = uploadResult.s3Url ? ("mp4" as const) : ("telegram" as const);
+      // حفظ file_id من Telegram فقط (بدون S3)
+      // الـ proxy endpoint سيسحب الفيديو من Telegram عند المشاهدة
+      const videoUrl = uploadResult.fileId;
+      const videoType = "telegram" as const;
 
       const episodeData = {
         seriesId: parseInt(seriesId),
@@ -79,9 +80,10 @@ export function setupUploadVideoHandler(app: Express) {
 
       res.json({
         success: true,
-        message: "تم رفع الفيديو بنجاح",
+        message: "تم رفع الفيديو إلى Telegram بنجاح",
         episode,
-        telegram: uploadResult,
+        fileId: uploadResult.fileId,
+        messageId: uploadResult.messageId,
       });
     } catch (error) {
       console.error("Error uploading video:", error);

@@ -3,7 +3,7 @@ import FormData from "form-data";
 import { Readable } from "stream";
 import { getDb } from "./db";
 import { telegramOperations } from "../drizzle/schema";
-import { storagePut } from "./storage";
+
 
 const TELEGRAM_API_URL = "https://api.telegram.org";
 
@@ -63,16 +63,8 @@ export async function uploadVideoToTelegram(
       throw new Error("Failed to get message_id or file_id from Telegram response");
     }
 
-    // رفع الفيديو إلى S3 أيضاً للعرض السريع
-    let s3Url = "";
-    try {
-      const s3Key = `videos/${metadata.seriesId}/s${metadata.season}e${metadata.episodeNumber}-${Date.now()}.mp4`;
-      const s3Result = await storagePut(s3Key, videoBuffer, "video/mp4");
-      s3Url = s3Result.url;
-      console.log("✅ Video uploaded to S3:", s3Url);
-    } catch (s3Error) {
-      console.error("⚠️ S3 upload failed (but Telegram succeeded):", s3Error);
-    }
+    // الفيديو محفوظ في Telegram فقط
+    // الـ proxy endpoint سيسحبه عند المشاهدة
 
     // حفظ معلومات العملية في قاعدة البيانات
     const db = await getDb();
@@ -85,7 +77,6 @@ export async function uploadVideoToTelegram(
         messageId: messageId.toString(),
         data: JSON.stringify({
           fileId,
-          s3Url,
           season: metadata.season,
           episodeNumber: metadata.episodeNumber,
           title: metadata.title,
@@ -100,7 +91,6 @@ export async function uploadVideoToTelegram(
       messageId,
       fileId,
       url: `tg://openmessage?user_id=${chatId}&message_id=${messageId}`,
-      s3Url,
     };
   } catch (error) {
     console.error("Error uploading video to Telegram:", error);
