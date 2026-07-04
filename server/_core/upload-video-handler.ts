@@ -58,6 +58,10 @@ export function setupUploadVideoHandler(app: Express) {
       );
 
       // إنشاء الحلقة في قاعدة البيانات
+      // استخدم S3 URL إن توفر، وإلا استخدم Telegram fileId
+      const videoUrl = uploadResult.s3Url || uploadResult.fileId;
+      const videoType = uploadResult.s3Url ? ("mp4" as const) : ("telegram" as const);
+
       const episodeData = {
         seriesId: parseInt(seriesId),
         season: parseInt(season),
@@ -66,8 +70,8 @@ export function setupUploadVideoHandler(app: Express) {
         titleAr,
         description: description || "",
         descriptionAr: descriptionAr || "",
-        videoUrl: uploadResult.fileId, // حفظ fileId من Telegram
-        videoType: "telegram" as const,
+        videoUrl,
+        videoType,
         videoSize: req.file.size,
       };
 
