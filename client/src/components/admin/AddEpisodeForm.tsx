@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,12 @@ interface FormData {
   descriptionAr: string;
 }
 
+interface Series {
+  id: number;
+  titleAr: string;
+  title?: string;
+}
+
 export default function AddEpisodeForm() {
   const [formData, setFormData] = useState<FormData>({
     seriesId: 0,
@@ -29,6 +35,18 @@ export default function AddEpisodeForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [successMessage, setSuccessMessage] = useState("");
+  const [series, setSeries] = useState<Series[]>([]);
+  const [loadingSeries, setLoadingSeries] = useState(true);
+
+  // جلب المسلسلات
+  const { data: seriesData, isLoading: seriesLoading } = trpc.series.list.useQuery();
+
+  useEffect(() => {
+    if (seriesData) {
+      setSeries(seriesData);
+      setLoadingSeries(false);
+    }
+  }, [seriesData]);
 
   const createEpisodeMutation = trpc.episodes.create.useMutation({
     onSuccess: () => {
@@ -129,6 +147,8 @@ export default function AddEpisodeForm() {
     }
   };
 
+  const selectedSeries = series.find(s => s.id === formData.seriesId);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {successMessage && (
@@ -137,12 +157,13 @@ export default function AddEpisodeForm() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-2">معرف المسلسل</label>
-          <Input
-            type="number"
-            placeholder="1"
+      {/* اختيار المسلسل */}
+      <div>
+        <label className="block text-sm font-medium mb-2">🎬 اختر المسلسل</label>
+        {seriesLoading ? (
+          <div className="text-center py-4 text-muted-foreground">جاري تحميل المسلسلات...</div>
+        ) : (
+          <select
             value={formData.seriesId}
             onChange={(e) =>
               setFormData({
@@ -151,9 +172,28 @@ export default function AddEpisodeForm() {
               })
             }
             disabled={isLoading}
-          />
-        </div>
+            className="w-full px-3 py-2 border rounded-md bg-background text-foreground"
+          >
+            <option value="0">-- اختر مسلسل --</option>
+            {series.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.titleAr} {s.title ? `(${s.title})` : ""}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
 
+      {/* عرض المسلسل المختار */}
+      {selectedSeries && (
+        <div className="bg-primary/10 border border-primary rounded-md p-3">
+          <p className="text-sm">
+            <span className="font-medium">المسلسل المختار:</span> {selectedSeries.titleAr}
+          </p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium mb-2">الموسم</label>
           <Input
@@ -169,9 +209,7 @@ export default function AddEpisodeForm() {
             disabled={isLoading}
           />
         </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium mb-2">رقم الحلقة</label>
           <Input
@@ -187,7 +225,9 @@ export default function AddEpisodeForm() {
             disabled={isLoading}
           />
         </div>
+      </div>
 
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium mb-2">العنوان (English)</label>
           <Input
@@ -199,18 +239,18 @@ export default function AddEpisodeForm() {
             disabled={isLoading}
           />
         </div>
-      </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-2">العنوان (العربية)</label>
-        <Input
-          placeholder="عنوان الحلقة بالعربية"
-          value={formData.titleAr}
-          onChange={(e) =>
-            setFormData({ ...formData, titleAr: e.target.value })
-          }
-          disabled={isLoading}
-        />
+        <div>
+          <label className="block text-sm font-medium mb-2">العنوان (العربية)</label>
+          <Input
+            placeholder="عنوان الحلقة بالعربية"
+            value={formData.titleAr}
+            onChange={(e) =>
+              setFormData({ ...formData, titleAr: e.target.value })
+            }
+            disabled={isLoading}
+          />
+        </div>
       </div>
 
       <div>
@@ -282,7 +322,7 @@ export default function AddEpisodeForm() {
 
       <Button
         type="submit"
-        disabled={isLoading || !videoFile}
+        disabled={isLoading || !videoFile || !formData.seriesId}
         className="w-full"
         size="lg"
       >
