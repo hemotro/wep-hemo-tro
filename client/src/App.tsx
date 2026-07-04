@@ -12,6 +12,7 @@ import SeriesDetail from "./pages/SeriesDetail";
 import EpisodeDetail from "./pages/EpisodeDetail";
 import Login from "./pages/Login";
 import { AdminNew } from "./pages/AdminNew";
+import AdminPanel from "./pages/AdminPanel";
 import ResetPassword from "./pages/ResetPassword";
 import PasswordResetCode from "./pages/PasswordResetCode";
 import BottomNav from "./components/BottomNav";
@@ -29,7 +30,8 @@ function Router() {
       <Route path={"/live"} component={Live} />
       <Route path={"/search"} component={Search} />
       <Route path={"/account"} component={Account} />
-      <Route path={"/admin"} component={AdminNew} />
+      <Route path={"admin"} component={AdminNew} />
+      <Route path={"admin-panel"} component={AdminPanel} />
       <Route path={"/series/:id"} component={SeriesDetail} />
       <Route path={"/episode/:seriesId/:episodeNumber"} component={EpisodeDetail} />
       <Route path={"/404"} component={NotFound} />
