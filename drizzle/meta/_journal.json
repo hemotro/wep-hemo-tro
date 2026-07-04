@@ -176,6 +176,13 @@
       "when": 1783076702017,
       "tag": "0024_smart_riptide",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1783146345539,
+      "tag": "0025_panoramic_pretty_boy",
+      "breakpoints": true
     }
   ]
 }

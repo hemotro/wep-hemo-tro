@@ -14,6 +14,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { uploadVideoToS3 } from "./videoUpload";
 import { initTelegramRouter } from "../telegram.router";
+import { setupGetTelegramVideoHandler } from "./get-telegram-video";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -46,6 +47,10 @@ async function startServer() {
   
   // Initialize Telegram Bot
   await initTelegramRouter();
+  
+  // Setup handlers
+  setupGetTelegramVideoHandler(app);
+  
   // Telegram webhook endpoint
   app.post("/api/telegram/webhook", async (req, res) => {
     try {
@@ -58,23 +63,49 @@ async function startServer() {
     }
   });
 
-  // Video upload endpoint
+  // Video upload endpoint - Upload to Telegram
   app.post("/api/upload-video", async (req: any, res) => {
     try {
       const file = req.files?.file as any;
-      const quality = req.body.quality as string;
+      const { seriesId, season, episodeNumber, title, titleAr, description, descriptionAr } = req.body;
 
       if (!file) {
-        return res.status(400).json({ error: "No file provided" });
+        return res.status(400).json({ error: "لم يتم تحديد ملف فيديو" });
       }
 
-      const buffer = Buffer.isBuffer(file.data) ? file.data : Buffer.from(file.data);
-      const url = await uploadVideoToS3(buffer, file.name, quality);
+      if (!seriesId || !season || !episodeNumber || !title || !titleAr) {
+        return res.status(400).json({ error: "بيانات ناقصة" });
+      }
 
-      res.json({ url });
+      const { uploadVideoToTelegram } = await import("../telegram-upload");
+      const buffer = Buffer.isBuffer(file.data) ? file.data : Buffer.from(file.data);
+      const chatId = parseInt(process.env.TELEGRAM_CHAT_ID || "0");
+
+      if (!chatId) {
+        return res.status(500).json({ error: "معرف الدردشة غير مكون" });
+      }
+
+      const uploadResult = await uploadVideoToTelegram(
+        buffer,
+        file.name,
+        chatId,
+        {
+          seriesId: parseInt(seriesId),
+          season: parseInt(season),
+          episodeNumber: parseInt(episodeNumber),
+          title,
+          titleAr,
+        }
+      );
+
+      res.json({
+        success: true,
+        url: uploadResult.fileId,
+        messageId: uploadResult.messageId,
+      });
     } catch (error) {
       console.error("Upload error:", error);
-      res.status(500).json({ error: "Upload failed" });
+      res.status(500).json({ error: error instanceof Error ? error.message : "فشل رفع الفيديو" });
     }
   });
 

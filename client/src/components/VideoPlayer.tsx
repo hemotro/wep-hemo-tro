@@ -8,14 +8,20 @@ interface VideoPlayerProps {
   isLive?: boolean;
   title?: string;
   episodeNumber?: string;
+  videoType?: "youtube" | "m3u8" | "mp4" | "telegram";
 }
 
-export default function VideoPlayer({ videoUrl, video480pUrl, video720pUrl, video1080pUrl, isLive = false, title, episodeNumber }: VideoPlayerProps) {
+export default function VideoPlayer({ videoUrl, video480pUrl, video720pUrl, video1080pUrl, isLive = false, title, episodeNumber, videoType = "mp4" }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const plyrRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // إذا كان نوع الفيديو Telegram، سحب الرابط
+    if (videoType === "telegram") {
+      return; // سيتم التعامل معه في مكان آخر
+    }
+
     // تحميل مكتبات Plyr و HLS من CDN
     const loadScripts = async () => {
       // تحميل Plyr CSS

@@ -89,7 +89,7 @@ export const episodes = mysqlTable("episodes", {
   description: text("description"),
   descriptionAr: text("descriptionAr"),
   videoUrl: varchar("videoUrl", { length: 500 }).notNull(),
-  videoType: mysqlEnum("videoType", ["youtube", "m3u8", "mp4"]).default("youtube"),
+  videoType: mysqlEnum("videoType", ["youtube", "m3u8", "mp4", "telegram"]).default("telegram"),
   // روابط الجودات المختلفة
   video1080pUrl: varchar("video1080pUrl", { length: 500 }), // 1080p
   video720pUrl: varchar("video720pUrl", { length: 500 }), // 720p

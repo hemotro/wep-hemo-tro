@@ -1,0 +1,1 @@
+ALTER TABLE `episodes` MODIFY COLUMN `videoType` enum('youtube','m3u8','mp4','telegram') DEFAULT 'telegram';
