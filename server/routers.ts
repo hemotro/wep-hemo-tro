@@ -474,7 +474,7 @@ export const appRouter = router({
         descriptionAr: z.string().optional(),
         description: z.string().optional(),
         videoUrl: z.string().min(1, "رابط الفيديو مطلوب"),
-        videoType: z.enum(["youtube", "mp4", "m3u8"]).default("youtube"),
+        videoType: z.enum(["youtube", "mp4", "m3u8", "telegram"]).default("telegram"),
         video480pUrl: z.string().optional(),
         video720pUrl: z.string().optional(),
         video1080pUrl: z.string().optional(),

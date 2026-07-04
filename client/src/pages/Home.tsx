@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Play, ChevronLeft, ChevronRight, Heart, AlertCircle } from "lucide-react";
+import { Play, ChevronLeft, ChevronRight, Heart, AlertCircle, Settings } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Home() {
@@ -11,6 +11,7 @@ export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
   const [scrollY, setScrollY] = useState(0);
+  const { data: user } = trpc.auth.me.useQuery();
 
   // استدعاء البيانات الديناميكية
   const { data: latestSeries, isLoading: latestLoading, error: latestError } = trpc.likes.getLatest.useQuery({ limit: 6 });
@@ -73,6 +74,19 @@ export default function Home() {
 
   return (
     <div className="flex-1 pb-20">
+      {/* زر Admin Panel - للمسؤولين فقط */}
+      {user?.role === "admin" && (
+        <div className="fixed bottom-20 right-4 z-40">
+          <Button
+            onClick={() => setLocation("/admin-panel")}
+            className="rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
+            title="لوحة الإدارة"
+          >
+            <Settings className="w-6 h-6" />
+          </Button>
+        </div>
+      )}
+
       {/* السلايدر الرئيسي - آخر 4 مسلسلات */}
       {sliderSeries && sliderSeries.length > 0 && currentSeries ? (
         <div className="relative w-full overflow-hidden">
