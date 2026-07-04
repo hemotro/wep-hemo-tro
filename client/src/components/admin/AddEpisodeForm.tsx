@@ -5,8 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Upload } from "lucide-react";
 
-type VideoType = "youtube" | "m3u8" | "mp4" | "telegram";
-
 interface FormData {
   seriesId: number;
   season: number;
@@ -15,8 +13,6 @@ interface FormData {
   titleAr: string;
   description: string;
   descriptionAr: string;
-  videoType: VideoType;
-  videoUrl: string;
 }
 
 export default function AddEpisodeForm() {
@@ -28,16 +24,17 @@ export default function AddEpisodeForm() {
     titleAr: "",
     description: "",
     descriptionAr: "",
-    videoType: "telegram",
-    videoUrl: "",
   });
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const createEpisodeMutation = trpc.episodes.create.useMutation({
     onSuccess: () => {
-      console.log("تم إضافة الحلقة بنجاح");
+      setSuccessMessage("✅ تم إضافة الحلقة بنجاح!");
+      setTimeout(() => setSuccessMessage(""), 3000);
+      
       setFormData({
         seriesId: 0,
         season: 1,
@@ -46,8 +43,6 @@ export default function AddEpisodeForm() {
         titleAr: "",
         description: "",
         descriptionAr: "",
-        videoType: "telegram",
-        videoUrl: "",
       });
       setVideoFile(null);
       setUploadProgress(0);
@@ -61,7 +56,7 @@ export default function AddEpisodeForm() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 500 * 1024 * 1024) {
-        console.error("حجم الملف كبير جداً (الحد الأقصى 500MB)");
+        alert("حجم الملف كبير جداً (الحد الأقصى 500MB)");
         return;
       }
       setVideoFile(file);
@@ -72,56 +67,50 @@ export default function AddEpisodeForm() {
     e.preventDefault();
 
     if (!formData.title.trim()) {
-      console.error("يجب إدخال عنوان الحلقة");
+      alert("يجب إدخال عنوان الحلقة");
+      return;
+    }
+
+    if (!formData.titleAr.trim()) {
+      alert("يجب إدخال عنوان الحلقة بالعربية");
       return;
     }
 
     if (!formData.seriesId) {
-      console.error("يجب اختيار مسلسل");
+      alert("يجب اختيار مسلسل");
       return;
     }
 
-    // التحقق من نوع الفيديو
-    if (formData.videoType === "telegram" && !videoFile) {
-      console.error("يجب اختيار ملف فيديو");
-      return;
-    }
-
-    if (formData.videoType !== "telegram" && !formData.videoUrl.trim()) {
-      console.error("يجب إدخال رابط الفيديو");
+    if (!videoFile) {
+      alert("يجب اختيار ملف فيديو");
       return;
     }
 
     setIsLoading(true);
     try {
-      let videoUrl = formData.videoUrl;
+      const formDataToSend = new FormData();
+      formDataToSend.append("file", videoFile);
+      formDataToSend.append("title", formData.title);
+      formDataToSend.append("titleAr", formData.titleAr);
+      formDataToSend.append("description", formData.description);
+      formDataToSend.append("descriptionAr", formData.descriptionAr);
+      formDataToSend.append("seriesId", formData.seriesId.toString());
+      formDataToSend.append("season", formData.season.toString());
+      formDataToSend.append("episodeNumber", formData.episodeNumber.toString());
 
-      // إذا كان نوع الفيديو Telegram، رفع الملف
-      if (formData.videoType === "telegram" && videoFile) {
-        const formDataToSend = new FormData();
-        formDataToSend.append("file", videoFile);
-        formDataToSend.append("title", formData.title);
-        formDataToSend.append("titleAr", formData.titleAr);
-        formDataToSend.append("description", formData.description);
-        formDataToSend.append("descriptionAr", formData.descriptionAr);
-        formDataToSend.append("seriesId", formData.seriesId.toString());
-        formDataToSend.append("season", formData.season.toString());
-        formDataToSend.append("episodeNumber", formData.episodeNumber.toString());
+      const uploadResponse = await fetch("/api/upload-video", {
+        method: "POST",
+        body: formDataToSend,
+      });
 
-        const uploadResponse = await fetch("/api/upload-video", {
-          method: "POST",
-          body: formDataToSend,
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error("فشل رفع الفيديو");
-        }
-
-        const uploadData = await uploadResponse.json();
-        videoUrl = uploadData.url;
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json();
+        throw new Error(errorData.error || "فشل رفع الفيديو");
       }
 
-      // إنشاء الحلقة
+      const uploadData = await uploadResponse.json();
+
+      // إنشاء الحلقة مع Telegram كنوع الفيديو
       await createEpisodeMutation.mutateAsync({
         seriesId: formData.seriesId,
         season: formData.season,
@@ -130,9 +119,11 @@ export default function AddEpisodeForm() {
         titleAr: formData.titleAr,
         description: formData.description,
         descriptionAr: formData.descriptionAr,
-        videoUrl: videoUrl,
-        videoType: formData.videoType,
+        videoUrl: uploadData.url,
+        videoType: "telegram",
       });
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "حدث خطأ");
     } finally {
       setIsLoading(false);
     }
@@ -140,6 +131,12 @@ export default function AddEpisodeForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {successMessage && (
+        <div className="bg-green-500/20 border border-green-500 text-green-600 px-4 py-2 rounded-md">
+          {successMessage}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium mb-2">معرف المسلسل</label>
@@ -192,9 +189,9 @@ export default function AddEpisodeForm() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">العنوان</label>
+          <label className="block text-sm font-medium mb-2">العنوان (English)</label>
           <Input
-            placeholder="عنوان الحلقة"
+            placeholder="Episode title in English"
             value={formData.title}
             onChange={(e) =>
               setFormData({ ...formData, title: e.target.value })
@@ -205,7 +202,7 @@ export default function AddEpisodeForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">العنوان (بالعربية)</label>
+        <label className="block text-sm font-medium mb-2">العنوان (العربية)</label>
         <Input
           placeholder="عنوان الحلقة بالعربية"
           value={formData.titleAr}
@@ -217,7 +214,7 @@ export default function AddEpisodeForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">الوصف (بالعربية)</label>
+        <label className="block text-sm font-medium mb-2">الوصف (العربية)</label>
         <Textarea
           placeholder="وصف الحلقة بالعربية"
           value={formData.descriptionAr}
@@ -230,9 +227,9 @@ export default function AddEpisodeForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">الوصف (بالإنجليزية)</label>
+        <label className="block text-sm font-medium mb-2">الوصف (English)</label>
         <Textarea
-          placeholder="وصف الحلقة بالإنجليزية"
+          placeholder="Episode description in English"
           value={formData.description}
           onChange={(e) =>
             setFormData({ ...formData, description: e.target.value })
@@ -242,76 +239,42 @@ export default function AddEpisodeForm() {
         />
       </div>
 
-      {/* اختيار نوع الفيديو */}
+      {/* رفع الفيديو - Telegram فقط */}
       <div>
-        <label className="block text-sm font-medium mb-2">نوع الفيديو</label>
-        <select
-          value={formData.videoType}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              videoType: e.target.value as VideoType,
-              videoUrl: "",
-            })
-          }
-          disabled={isLoading}
-          className="w-full px-3 py-2 border rounded-md bg-background text-foreground"
-        >
-          <option value="telegram">📤 Telegram (رفع الفيديو)</option>
-          <option value="youtube">🎬 YouTube (رابط الفيديو)</option>
-          <option value="m3u8">📡 HLS Stream (رابط البث)</option>
-          <option value="mp4">🎥 MP4 Direct (رابط مباشر)</option>
-        </select>
+        <label className="block text-sm font-medium mb-2">📤 رفع الفيديو (Telegram)</label>
+        <div className="border-2 border-dashed border-primary rounded-lg p-6 text-center hover:bg-primary/5 transition-colors">
+          <input
+            type="file"
+            accept="video/*"
+            onChange={handleVideoChange}
+            disabled={isLoading}
+            className="hidden"
+            id="video-input"
+          />
+          <label
+            htmlFor="video-input"
+            className="cursor-pointer flex flex-col items-center gap-2"
+          >
+            <Upload className="w-8 h-8 text-primary" />
+            <span className="text-sm font-medium">
+              {videoFile ? videoFile.name : "اضغط لاختيار ملف الفيديو"}
+            </span>
+            {videoFile && (
+              <span className="text-xs text-muted-foreground">
+                {(videoFile.size / 1024 / 1024).toFixed(2)} MB / 500 MB
+              </span>
+            )}
+            <span className="text-xs text-muted-foreground mt-2">
+              الصيغ المدعومة: MP4, MKV, AVI, MOV
+            </span>
+          </label>
+        </div>
       </div>
 
-      {/* رفع الفيديو أو إدخال الرابط */}
-      {formData.videoType === "telegram" ? (
-        <div>
-          <label className="block text-sm font-medium mb-2">الفيديو (Telegram)</label>
-          <div className="border-2 border-dashed border-muted-foreground rounded-lg p-6 text-center">
-            <input
-              type="file"
-              accept="video/*"
-              onChange={handleVideoChange}
-              disabled={isLoading}
-              className="hidden"
-              id="video-input"
-            />
-            <label
-              htmlFor="video-input"
-              className="cursor-pointer flex flex-col items-center gap-2"
-            >
-              <Upload className="w-8 h-8 text-muted-foreground" />
-              <span className="text-sm">
-                {videoFile ? videoFile.name : "اضغط لاختيار ملف الفيديو"}
-              </span>
-              {videoFile && (
-                <span className="text-xs text-muted-foreground">
-                  {(videoFile.size / 1024 / 1024).toFixed(2)} MB (الحد الأقصى 500MB)
-                </span>
-              )}
-            </label>
-          </div>
-        </div>
-      ) : (
-        <div>
-          <label className="block text-sm font-medium mb-2">رابط الفيديو</label>
-          <Input
-            type="url"
-            placeholder="https://example.com/video.mp4"
-            value={formData.videoUrl}
-            onChange={(e) =>
-              setFormData({ ...formData, videoUrl: e.target.value })
-            }
-            disabled={isLoading}
-          />
-        </div>
-      )}
-
       {uploadProgress > 0 && uploadProgress < 100 && (
-        <div className="w-full bg-muted rounded-full h-2">
+        <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
           <div
-            className="bg-blue-500 h-2 rounded-full transition-all"
+            className="bg-primary h-2 rounded-full transition-all duration-300"
             style={{ width: `${uploadProgress}%` }}
           />
         </div>
@@ -319,11 +282,12 @@ export default function AddEpisodeForm() {
 
       <Button
         type="submit"
-        disabled={isLoading}
+        disabled={isLoading || !videoFile}
         className="w-full"
+        size="lg"
       >
         {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-        {isLoading ? "جاري الرفع..." : "إضافة الحلقة"}
+        {isLoading ? "جاري الرفع..." : "✅ إضافة الحلقة"}
       </Button>
     </form>
   );
