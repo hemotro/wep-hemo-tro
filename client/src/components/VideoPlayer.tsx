@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { trpc } from '@/lib/trpc';
 
 interface VideoPlayerProps {
   videoUrl: string;
@@ -15,12 +16,45 @@ export default function VideoPlayer({ videoUrl, video480pUrl, video720pUrl, vide
   const videoRef = useRef<HTMLVideoElement>(null);
   const plyrRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [telegramVideoUrl, setTelegramVideoUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // جلب رابط الفيديو من Telegram
   useEffect(() => {
-    // إذا كان نوع الفيديو Telegram، سحب الرابط
-    if (videoType === "telegram") {
-      return; // سيتم التعامل معه في مكان آخر
+    if (videoType === "telegram" && videoUrl) {
+      const fetchTelegramUrl = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          // استدعاء API للحصول على رابط الفيديو من Telegram
+          const response = await fetch(`/api/get-telegram-video?fileId=${encodeURIComponent(videoUrl)}`);
+          if (!response.ok) {
+            throw new Error("فشل جلب الفيديو من Telegram");
+          }
+          const data = await response.json();
+          setTelegramVideoUrl(data.url);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "خطأ في جلب الفيديو");
+          console.error("Error fetching Telegram video:", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchTelegramUrl();
     }
+  }, [videoUrl, videoType]);
+
+  // إعداد مشغل الفيديو
+  useEffect(() => {
+    // إذا كان نوع الفيديو Telegram وليس لدينا الرابط بعد
+    if (videoType === "telegram" && !telegramVideoUrl) {
+      return;
+    }
+
+    // تحديد الرابط الفعلي للفيديو
+    const actualUrl = videoType === "telegram" ? telegramVideoUrl : videoUrl;
+    if (!actualUrl) return;
 
     // تحميل مكتبات Plyr و HLS من CDN
     const loadScripts = async () => {
@@ -58,7 +92,7 @@ export default function VideoPlayer({ videoUrl, video480pUrl, video720pUrl, vide
 
       // إعداد المشغل
       if (videoRef.current && window.Plyr) {
-        setupPlayer();
+        setupPlayer(actualUrl);
       }
     };
 
@@ -69,23 +103,23 @@ export default function VideoPlayer({ videoUrl, video480pUrl, video720pUrl, vide
         plyrRef.current.destroy();
       }
     };
-  }, [videoUrl]);
+  }, [telegramVideoUrl, videoUrl, videoType]);
 
-  const setupPlayer = () => {
+  const setupPlayer = (url: string) => {
     if (!videoRef.current || !window.Plyr) return;
 
-    const isHls = videoUrl.endsWith('.m3u8');
+    const isHls = url.endsWith('.m3u8');
 
     if (isHls) {
       // بث مباشر HLS
       if (window.Hls && window.Hls.isSupported()) {
         const hls = new window.Hls();
-        hls.loadSource(videoUrl);
+        hls.loadSource(url);
         hls.attachMedia(videoRef.current);
       } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-        videoRef.current.src = videoUrl;
+        videoRef.current.src = url;
       } else {
-        videoRef.current.src = videoUrl;
+        videoRef.current.src = url;
       }
 
       // إعداد Plyr للبث المباشر (بدون شريط progress)
@@ -98,7 +132,7 @@ export default function VideoPlayer({ videoUrl, video480pUrl, video720pUrl, vide
       });
     } else {
       // فيديو عادي MP4
-      videoRef.current.src = videoUrl;
+      videoRef.current.src = url;
       videoRef.current.setAttribute('controls', 'true');
 
       // إعداد Plyr للفيديو العادي (شريط كامل)
@@ -143,12 +177,32 @@ export default function VideoPlayer({ videoUrl, video480pUrl, video720pUrl, vide
 
       {/* المشغل */}
       <div className="relative w-full" style={{ aspectRatio: '16 / 9' }}>
-        <video
-          ref={videoRef}
-          className="w-full h-full"
-          playsInline
-          crossOrigin="anonymous"
-        />
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+            <div className="text-white text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-2"></div>
+              <p>جاري تحميل الفيديو...</p>
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+            <div className="text-white text-center">
+              <p className="text-red-400 mb-2">❌ {error}</p>
+              <p className="text-sm text-gray-400">يرجى المحاولة لاحقاً</p>
+            </div>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <video
+            ref={videoRef}
+            className="w-full h-full"
+            playsInline
+            crossOrigin="anonymous"
+          />
+        )}
       </div>
     </div>
   );

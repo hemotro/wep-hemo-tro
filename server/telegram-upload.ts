@@ -1,4 +1,6 @@
 import axios from "axios";
+import FormData from "form-data";
+import { Readable } from "stream";
 import { getDb } from "./db";
 import { telegramOperations } from "../drizzle/schema";
 
@@ -28,9 +30,10 @@ export async function uploadVideoToTelegram(
   try {
     // إنشاء FormData لإرسال الفيديو
     const formData = new FormData();
-    // @ts-ignore - Buffer compatibility
-    const blob = new Blob([videoBuffer], { type: "video/mp4" });
-    formData.append("video", blob, fileName);
+    
+    // تحويل Buffer إلى Stream
+    const stream = Readable.from(videoBuffer);
+    formData.append("video", stream, fileName);
     formData.append("chat_id", chatId.toString());
     formData.append("caption", `
 🎬 ${metadata.titleAr}
@@ -43,9 +46,7 @@ export async function uploadVideoToTelegram(
       `${TELEGRAM_API_URL}/bot${botToken}/sendVideo`,
       formData,
       {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        headers: formData.getHeaders(),
         timeout: 300000, // 5 دقائق
       }
     );
@@ -54,8 +55,12 @@ export async function uploadVideoToTelegram(
       throw new Error(response.data.description || "Failed to upload video");
     }
 
-    const messageId = response.data.result.message_id;
-    const fileId = response.data.result.video.file_id;
+    const messageId = response.data.result?.message_id;
+    const fileId = response.data.result?.video?.file_id;
+
+    if (!messageId || !fileId) {
+      throw new Error("Failed to get message_id or file_id from Telegram response");
+    }
 
     // حفظ معلومات العملية في قاعدة البيانات
     const db = await getDb();

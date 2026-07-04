@@ -13,6 +13,7 @@ import EpisodeDetail from "./pages/EpisodeDetail";
 import Login from "./pages/Login";
 import { AdminNew } from "./pages/AdminNew";
 import AdminPanel from "./pages/AdminPanel";
+import Episodes from "./pages/Episodes";
 import ResetPassword from "./pages/ResetPassword";
 import PasswordResetCode from "./pages/PasswordResetCode";
 import BottomNav from "./components/BottomNav";
@@ -32,6 +33,7 @@ function Router() {
       <Route path={"/account"} component={Account} />
       <Route path={"admin"} component={AdminNew} />
       <Route path={"admin-panel"} component={AdminPanel} />
+      <Route path={"episodes"} component={Episodes} />
       <Route path={"/series/:id"} component={SeriesDetail} />
       <Route path={"/episode/:seriesId/:episodeNumber"} component={EpisodeDetail} />
       <Route path={"/404"} component={NotFound} />
