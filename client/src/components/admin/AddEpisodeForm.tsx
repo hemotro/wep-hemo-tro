@@ -7,12 +7,8 @@ import { Loader2, Upload } from "lucide-react";
 
 interface FormData {
   seriesId: number;
-  season: number;
   episodeNumber: number;
-  title: string;
   titleAr: string;
-  description: string;
-  descriptionAr: string;
 }
 
 interface Series {
@@ -24,12 +20,8 @@ interface Series {
 export default function AddEpisodeForm() {
   const [formData, setFormData] = useState<FormData>({
     seriesId: 0,
-    season: 1,
     episodeNumber: 1,
-    title: "",
     titleAr: "",
-    description: "",
-    descriptionAr: "",
   });
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -55,12 +47,8 @@ export default function AddEpisodeForm() {
       
       setFormData({
         seriesId: 0,
-        season: 1,
         episodeNumber: 1,
-        title: "",
         titleAr: "",
-        description: "",
-        descriptionAr: "",
       });
       setVideoFile(null);
       setUploadProgress(0);
@@ -84,13 +72,8 @@ export default function AddEpisodeForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title.trim()) {
-      alert("يجب إدخال عنوان الحلقة");
-      return;
-    }
-
     if (!formData.titleAr.trim()) {
-      alert("يجب إدخال عنوان الحلقة بالعربية");
+      alert("يجب إدخال اسم الحلقة");
       return;
     }
 
@@ -108,12 +91,8 @@ export default function AddEpisodeForm() {
     try {
       const formDataToSend = new FormData();
       formDataToSend.append("file", videoFile);
-      formDataToSend.append("title", formData.title);
       formDataToSend.append("titleAr", formData.titleAr);
-      formDataToSend.append("description", formData.description);
-      formDataToSend.append("descriptionAr", formData.descriptionAr);
       formDataToSend.append("seriesId", formData.seriesId.toString());
-      formDataToSend.append("season", formData.season.toString());
       formDataToSend.append("episodeNumber", formData.episodeNumber.toString());
 
       const uploadResponse = await fetch("/api/upload-video", {
@@ -131,12 +110,8 @@ export default function AddEpisodeForm() {
       // إنشاء الحلقة مع Telegram كنوع الفيديو
       await createEpisodeMutation.mutateAsync({
         seriesId: formData.seriesId,
-        season: formData.season,
         episodeNumber: formData.episodeNumber,
-        title: formData.title,
         titleAr: formData.titleAr,
-        description: formData.description,
-        descriptionAr: formData.descriptionAr,
         videoUrl: uploadData.url,
         videoType: "telegram",
       });
@@ -193,89 +168,31 @@ export default function AddEpisodeForm() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-2">الموسم</label>
-          <Input
-            type="number"
-            placeholder="1"
-            value={formData.season}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                season: parseInt(e.target.value) || 1,
-              })
-            }
-            disabled={isLoading}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2">رقم الحلقة</label>
-          <Input
-            type="number"
-            placeholder="1"
-            value={formData.episodeNumber}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                episodeNumber: parseInt(e.target.value) || 1,
-              })
-            }
-            disabled={isLoading}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-2">العنوان (English)</label>
-          <Input
-            placeholder="Episode title in English"
-            value={formData.title}
-            onChange={(e) =>
-              setFormData({ ...formData, title: e.target.value })
-            }
-            disabled={isLoading}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2">العنوان (العربية)</label>
-          <Input
-            placeholder="عنوان الحلقة بالعربية"
-            value={formData.titleAr}
-            onChange={(e) =>
-              setFormData({ ...formData, titleAr: e.target.value })
-            }
-            disabled={isLoading}
-          />
-        </div>
-      </div>
-
       <div>
-        <label className="block text-sm font-medium mb-2">الوصف (العربية)</label>
-        <Textarea
-          placeholder="وصف الحلقة بالعربية"
-          value={formData.descriptionAr}
+        <label className="block text-sm font-medium mb-2">رقم الحلقة</label>
+        <Input
+          type="number"
+          placeholder="1"
+          value={formData.episodeNumber}
           onChange={(e) =>
-            setFormData({ ...formData, descriptionAr: e.target.value })
+            setFormData({
+              ...formData,
+              episodeNumber: parseInt(e.target.value) || 1,
+            })
           }
           disabled={isLoading}
-          rows={3}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">الوصف (English)</label>
-        <Textarea
-          placeholder="Episode description in English"
-          value={formData.description}
+        <label className="block text-sm font-medium mb-2">اسم الحلقة</label>
+        <Input
+          placeholder="أدخل اسم الحلقة"
+          value={formData.titleAr}
           onChange={(e) =>
-            setFormData({ ...formData, description: e.target.value })
+            setFormData({ ...formData, titleAr: e.target.value })
           }
           disabled={isLoading}
-          rows={3}
         />
       </div>
 
