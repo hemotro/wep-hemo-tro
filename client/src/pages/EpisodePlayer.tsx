@@ -59,6 +59,7 @@ export default function EpisodePlayer() {
         <div className="aspect-video">
           <VideoPlayer
             videoUrl={currentEpisode.videoUrl}
+            videoType={(currentEpisode.videoType as any) || "mp4"}
             title={`${series.titleAr} - الحلقة ${currentEpisode.episodeNumber}: ${currentEpisode.titleAr}`}
             episodeNumber={`${currentEpisode.episodeNumber}`}
             isLive={false}

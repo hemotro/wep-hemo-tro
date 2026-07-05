@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useMemo } from "react";
+import VideoPlayer from "@/components/VideoPlayer";
 
 // دالة لاستخراج معرف YouTube من الرابط
 function extractYoutubeId(url: string): string {
@@ -89,12 +90,12 @@ export default function EpisodeDetail() {
                   allowFullScreen
                 />
               ) : (
-                <video
+                <VideoPlayer
                   key={videoUrl}
-                  controls
-                  autoPlay
-                  className="w-full h-full"
-                  src={videoUrl}
+                  videoUrl={videoUrl}
+                  videoType={(episode.videoType as any) || "mp4"}
+                  title={series?.titleAr}
+                  episodeNumber={episode.episodeNumber.toString()}
                 />
               )}
             </div>
