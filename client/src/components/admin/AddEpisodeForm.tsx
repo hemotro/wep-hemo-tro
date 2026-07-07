@@ -9,7 +9,10 @@ interface FormData {
   seriesId: number;
   season: number;
   episodeNumber: number;
+  title: string;
   titleAr: string;
+  description?: string;
+  descriptionAr?: string;
 }
 
 interface Series {
@@ -23,12 +26,16 @@ export default function AddEpisodeForm() {
     seriesId: 0,
     season: 1,
     episodeNumber: 1,
+    title: "",
     titleAr: "",
+    description: "",
+    descriptionAr: "",
   });
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const [series, setSeries] = useState<Series[]>([]);
   const [loadingSeries, setLoadingSeries] = useState(true);
 
@@ -45,19 +52,24 @@ export default function AddEpisodeForm() {
   const createEpisodeMutation = trpc.episodes.create.useMutation({
     onSuccess: () => {
       setSuccessMessage("✅ تم إضافة الحلقة بنجاح!");
+      setErrorMessage("");
       setTimeout(() => setSuccessMessage(""), 3000);
       
       setFormData({
         seriesId: 0,
         season: 1,
         episodeNumber: 1,
+        title: "",
         titleAr: "",
+        description: "",
+        descriptionAr: "",
       });
       setVideoFile(null);
       setUploadProgress(0);
     },
     onError: (error) => {
       console.error("خطأ:", error.message);
+      setErrorMessage(error.message);
     },
   });
 
@@ -65,28 +77,46 @@ export default function AddEpisodeForm() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 500 * 1024 * 1024) {
-        alert("حجم الملف كبير جداً (الحد الأقصى 500MB)");
+        setErrorMessage("حجم الملف كبير جداً (الحد الأقصى 500MB)");
         return;
       }
       setVideoFile(file);
+      setErrorMessage("");
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage("");
 
-    if (!formData.titleAr.trim()) {
-      alert("يجب إدخال اسم الحلقة");
+    // التحقق من جميع الحقول المطلوبة
+    if (!formData.seriesId) {
+      setErrorMessage("❌ يجب اختيار مسلسل");
       return;
     }
 
-    if (!formData.seriesId) {
-      alert("يجب اختيار مسلسل");
+    if (!formData.titleAr.trim()) {
+      setErrorMessage("❌ يجب إدخال اسم الحلقة بالعربية");
+      return;
+    }
+
+    if (!formData.title.trim()) {
+      setErrorMessage("❌ يجب إدخال اسم الحلقة بالإنجليزية");
       return;
     }
 
     if (!videoFile) {
-      alert("يجب اختيار ملف فيديو");
+      setErrorMessage("❌ يجب اختيار ملف فيديو");
+      return;
+    }
+
+    if (formData.season < 1) {
+      setErrorMessage("❌ رقم الموسم يجب أن يكون أكبر من 0");
+      return;
+    }
+
+    if (formData.episodeNumber < 1) {
+      setErrorMessage("❌ رقم الحلقة يجب أن يكون أكبر من 0");
       return;
     }
 
@@ -95,9 +125,17 @@ export default function AddEpisodeForm() {
       const formDataToSend = new FormData();
       formDataToSend.append("file", videoFile);
       formDataToSend.append("titleAr", formData.titleAr);
+      formDataToSend.append("title", formData.title);
       formDataToSend.append("seriesId", formData.seriesId.toString());
       formDataToSend.append("season", formData.season.toString());
       formDataToSend.append("episodeNumber", formData.episodeNumber.toString());
+      
+      if (formData.description) {
+        formDataToSend.append("description", formData.description);
+      }
+      if (formData.descriptionAr) {
+        formDataToSend.append("descriptionAr", formData.descriptionAr);
+      }
 
       const uploadResponse = await fetch("/api/upload-video", {
         method: "POST",
@@ -117,11 +155,16 @@ export default function AddEpisodeForm() {
         season: formData.season,
         episodeNumber: formData.episodeNumber,
         titleAr: formData.titleAr,
-        videoUrl: uploadData.url,
+        title: formData.title,
+        descriptionAr: formData.descriptionAr,
+        description: formData.description,
+        videoUrl: uploadData.fileId,
         videoType: "telegram",
       });
     } catch (error) {
-      alert(error instanceof Error ? error.message : "حدث خطأ");
+      const errorMsg = error instanceof Error ? error.message : "حدث خطأ غير متوقع";
+      setErrorMessage(`❌ ${errorMsg}`);
+      console.error("Error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -137,9 +180,15 @@ export default function AddEpisodeForm() {
         </div>
       )}
 
+      {errorMessage && (
+        <div className="bg-red-500/20 border border-red-500 text-red-600 px-4 py-2 rounded-md">
+          {errorMessage}
+        </div>
+      )}
+
       {/* اختيار المسلسل */}
       <div>
-        <label className="block text-sm font-medium mb-2">🎬 اختر المسلسل</label>
+        <label className="block text-sm font-medium mb-2">🎬 اختر المسلسل *</label>
         {seriesLoading ? (
           <div className="text-center py-4 text-muted-foreground">جاري تحميل المسلسلات...</div>
         ) : (
@@ -153,6 +202,7 @@ export default function AddEpisodeForm() {
             }
             disabled={isLoading}
             className="w-full px-3 py-2 border rounded-md bg-background text-foreground"
+            required
           >
             <option value="0">-- اختر مسلسل --</option>
             {series.map((s) => (
@@ -173,12 +223,14 @@ export default function AddEpisodeForm() {
         </div>
       )}
 
+      {/* الموسم ورقم الحلقة */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium mb-2">الموسم</label>
+          <label className="block text-sm font-medium mb-2">الموسم *</label>
           <Input
             type="number"
             placeholder="1"
+            min="1"
             value={formData.season}
             onChange={(e) =>
               setFormData({
@@ -187,13 +239,15 @@ export default function AddEpisodeForm() {
               })
             }
             disabled={isLoading}
+            required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-2">رقم الحلقة</label>
+          <label className="block text-sm font-medium mb-2">رقم الحلقة *</label>
           <Input
             type="number"
             placeholder="1"
+            min="1"
             value={formData.episodeNumber}
             onChange={(e) =>
               setFormData({
@@ -202,25 +256,70 @@ export default function AddEpisodeForm() {
               })
             }
             disabled={isLoading}
+            required
           />
         </div>
       </div>
 
+      {/* اسم الحلقة بالعربية */}
       <div>
-        <label className="block text-sm font-medium mb-2">اسم الحلقة</label>
+        <label className="block text-sm font-medium mb-2">اسم الحلقة بالعربية *</label>
         <Input
-          placeholder="أدخل اسم الحلقة"
+          placeholder="أدخل اسم الحلقة بالعربية"
           value={formData.titleAr}
           onChange={(e) =>
             setFormData({ ...formData, titleAr: e.target.value })
           }
           disabled={isLoading}
+          required
         />
       </div>
 
-      {/* رفع الفيديو - Telegram فقط */}
+      {/* اسم الحلقة بالإنجليزية */}
       <div>
-        <label className="block text-sm font-medium mb-2">📤 رفع الفيديو (Telegram)</label>
+        <label className="block text-sm font-medium mb-2">اسم الحلقة بالإنجليزية *</label>
+        <Input
+          placeholder="أدخل اسم الحلقة بالإنجليزية"
+          value={formData.title}
+          onChange={(e) =>
+            setFormData({ ...formData, title: e.target.value })
+          }
+          disabled={isLoading}
+          required
+        />
+      </div>
+
+      {/* الوصف بالعربية (اختياري) */}
+      <div>
+        <label className="block text-sm font-medium mb-2">الوصف بالعربية (اختياري)</label>
+        <Textarea
+          placeholder="أدخل وصف الحلقة بالعربية"
+          value={formData.descriptionAr || ""}
+          onChange={(e) =>
+            setFormData({ ...formData, descriptionAr: e.target.value })
+          }
+          disabled={isLoading}
+          rows={3}
+        />
+      </div>
+
+      {/* الوصف بالإنجليزية (اختياري) */}
+      <div>
+        <label className="block text-sm font-medium mb-2">الوصف بالإنجليزية (اختياري)</label>
+        <Textarea
+          placeholder="أدخل وصف الحلقة بالإنجليزية"
+          value={formData.description || ""}
+          onChange={(e) =>
+            setFormData({ ...formData, description: e.target.value })
+          }
+          disabled={isLoading}
+          rows={3}
+        />
+      </div>
+
+      {/* رفع الفيديو */}
+      <div>
+        <label className="block text-sm font-medium mb-2">📤 رفع الفيديو *</label>
         <div className="border-2 border-dashed border-primary rounded-lg p-6 text-center hover:bg-primary/5 transition-colors">
           <input
             type="file"
@@ -229,6 +328,7 @@ export default function AddEpisodeForm() {
             disabled={isLoading}
             className="hidden"
             id="video-input"
+            required
           />
           <label
             htmlFor="video-input"
@@ -261,13 +361,17 @@ export default function AddEpisodeForm() {
 
       <Button
         type="submit"
-        disabled={isLoading || !videoFile || !formData.seriesId}
+        disabled={isLoading || !videoFile || !formData.seriesId || !formData.titleAr || !formData.title}
         className="w-full"
         size="lg"
       >
         {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
         {isLoading ? "جاري الرفع..." : "✅ إضافة الحلقة"}
       </Button>
+
+      <div className="text-xs text-muted-foreground text-center">
+        * الحقول المطلوبة
+      </div>
     </form>
   );
 }

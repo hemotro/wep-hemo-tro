@@ -30,7 +30,7 @@ function Router() {
       <Route path={"/live"} component={Live} />
       <Route path={"/search"} component={Search} />
       <Route path={"/account"} component={Account} />
-      <Route path={"admin-panel"} component={AdminPanel} />
+      <Route path={"/admin-panel"} component={AdminPanel} />
       <Route path={"episodes"} component={Episodes} />
       <Route path={"/series/:id"} component={SeriesDetail} />
       <Route path={"/episode/:seriesId/:episodeNumber"} component={EpisodeDetail} />
