@@ -8,6 +8,7 @@ import { Plus, Film, Clapperboard, Settings, LogOut } from "lucide-react";
 import AddSeriesForm from "@/components/admin/AddSeriesForm";
 import AddEpisodeForm from "@/components/admin/AddEpisodeForm";
 import SeriesManagement from "@/components/admin/SeriesManagement";
+import EpisodesManagement from "@/components/admin/EpisodesManagement";
 
 export default function AdminPanel() {
   const { data: user } = trpc.auth.me.useQuery();
@@ -104,18 +105,30 @@ export default function AdminPanel() {
 
           {/* تبويب الحلقات */}
           <TabsContent value="episodes" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
-                  إضافة حلقة جديدة
-                </CardTitle>
-                <CardDescription>أضف حلقة جديدة مع الفيديو والصور</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AddEpisodeForm />
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Plus className="w-5 h-5" />
+                    إضافة حلقة جديدة
+                  </CardTitle>
+                  <CardDescription>أضف حلقة جديدة مع الفيديو والصور</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AddEpisodeForm />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>الحلقات الموجودة</CardTitle>
+                  <CardDescription>إدارة الحلقات والتعديل عليها</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <EpisodesManagement />
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* تبويب الإعدادات */}

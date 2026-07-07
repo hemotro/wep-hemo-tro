@@ -1,36 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 
-export default function AddSeriesForm() {
+interface EditSeriesFormProps {
+  seriesId: number;
+  onSuccess?: () => void;
+}
+
+export default function EditSeriesForm({ seriesId, onSuccess }: EditSeriesFormProps) {
   const [formData, setFormData] = useState({
     titleAr: "",
     descriptionAr: "",
     genre: "",
     totalSeasons: 1,
-    status: "ongoing" as "ongoing" | "completed",
     posterUrl: "",
     bannerUrl: "",
     logoUrl: "",
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  const createSeriesMutation = trpc.series.create.useMutation({
-    onSuccess: () => {
-      alert("تم إضافة المسلسل بنجاح!");
+  // جلب بيانات المسلسل
+  const { data: series } = trpc.series.getById.useQuery({ id: seriesId });
+
+  useEffect(() => {
+    if (series) {
       setFormData({
-        titleAr: "",
-        descriptionAr: "",
-        genre: "",
-        totalSeasons: 1,
-        status: "ongoing",
-        posterUrl: "",
-        bannerUrl: "",
-        logoUrl: "",
+        titleAr: series.titleAr || "",
+        descriptionAr: series.descriptionAr || "",
+        genre: series.genre || "",
+        totalSeasons: series.totalSeasons || 1,
+        posterUrl: series.posterUrl || "",
+        bannerUrl: series.bannerUrl || "",
+        logoUrl: series.logoUrl || "",
       });
+    }
+  }, [series]);
+
+  const updateSeriesMutation = trpc.series.update.useMutation({
+    onSuccess: () => {
+      alert("تم تحديث المسلسل بنجاح!");
+      onSuccess?.();
     },
     onError: (error) => {
       alert("خطأ: " + error.message);
@@ -39,7 +51,7 @@ export default function AddSeriesForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.titleAr.trim()) {
       alert("يجب إدخال اسم المسلسل");
       return;
@@ -47,11 +59,11 @@ export default function AddSeriesForm() {
 
     setIsLoading(true);
     try {
-      await createSeriesMutation.mutateAsync({
+      await updateSeriesMutation.mutateAsync({
+        id: seriesId,
         titleAr: formData.titleAr,
         descriptionAr: formData.descriptionAr,
         genre: formData.genre,
-        totalSeasons: formData.totalSeasons,
         posterUrl: formData.posterUrl || undefined,
         bannerUrl: formData.bannerUrl || undefined,
         logoUrl: formData.logoUrl || undefined,
@@ -62,7 +74,9 @@ export default function AddSeriesForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 bg-card p-4 rounded-lg border">
+      <h3 className="text-lg font-semibold">تعديل المسلسل</h3>
+
       <div>
         <label className="block text-sm font-medium mb-2">اسم المسلسل</label>
         <Input
@@ -100,22 +114,20 @@ export default function AddSeriesForm() {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-2">عدد المواسم</label>
-          <Input
-            type="number"
-            placeholder="1"
-            value={formData.totalSeasons}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                totalSeasons: parseInt(e.target.value) || 1,
-              })
-            }
-            disabled={isLoading}
-          />
-        </div>
+      <div>
+        <label className="block text-sm font-medium mb-2">عدد المواسم</label>
+        <Input
+          type="number"
+          placeholder="1"
+          value={formData.totalSeasons}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              totalSeasons: parseInt(e.target.value) || 1,
+            })
+          }
+          disabled={isLoading}
+        />
       </div>
 
       <div>
@@ -162,8 +174,8 @@ export default function AddSeriesForm() {
         disabled={isLoading || !formData.titleAr.trim()}
         className="w-full"
       >
-        {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-        {isLoading ? "جاري الإضافة..." : "إضافة المسلسل"}
+        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        حفظ التغييرات
       </Button>
     </form>
   );
