@@ -96,6 +96,7 @@ export default function AddEpisodeForm() {
       formDataToSend.append("file", videoFile);
       formDataToSend.append("titleAr", formData.titleAr);
       formDataToSend.append("seriesId", formData.seriesId.toString());
+      formDataToSend.append("season", formData.season.toString());
       formDataToSend.append("episodeNumber", formData.episodeNumber.toString());
 
       const uploadResponse = await fetch("/api/upload-video", {
