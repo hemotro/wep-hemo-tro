@@ -44,6 +44,8 @@ export const series = mysqlTable("series", {
   descriptionAr: text("descriptionAr"),
   genre: varchar("genre", { length: 255 }),
   posterUrl: varchar("posterUrl", { length: 500 }),
+  bannerUrl: varchar("bannerUrl", { length: 500 }), // البانر الذي يظهر فوق الفيديو
+  logoUrl: varchar("logoUrl", { length: 500 }), // اللوقو الذي يظهر تحت البانر
   totalSeasons: int("totalSeasons").default(1),
   currentSeason: int("currentSeason").default(1),
   totalEpisodes: int("totalEpisodes").default(0),

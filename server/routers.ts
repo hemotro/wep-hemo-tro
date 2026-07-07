@@ -356,6 +356,8 @@ export const appRouter = router({
         description: z.string().optional(),
         genre: z.string().optional(),
         posterUrl: z.string().optional(),
+        bannerUrl: z.string().optional(),
+        logoUrl: z.string().optional(),
         totalSeasons: z.number().optional().default(1),
         currentSeason: z.number().optional().default(1),
         platformId: z.number().optional(),
@@ -369,6 +371,8 @@ export const appRouter = router({
             description: input.description,
             genre: input.genre,
             posterUrl: input.posterUrl,
+            bannerUrl: input.bannerUrl,
+            logoUrl: input.logoUrl,
             totalSeasons: input.totalSeasons,
             currentSeason: input.currentSeason,
             totalEpisodes: 0,
@@ -393,6 +397,8 @@ export const appRouter = router({
         description: z.string().optional(),
         genre: z.string().optional(),
         posterUrl: z.string().optional(),
+        bannerUrl: z.string().optional(),
+        logoUrl: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
         try {

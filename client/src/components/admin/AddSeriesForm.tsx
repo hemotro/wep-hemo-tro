@@ -12,6 +12,8 @@ export default function AddSeriesForm() {
     genre: "",
     totalSeasons: 1,
     status: "ongoing" as "ongoing" | "completed",
+    bannerUrl: "",
+    logoUrl: "",
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -24,6 +26,8 @@ export default function AddSeriesForm() {
         genre: "",
         totalSeasons: 1,
         status: "ongoing",
+        bannerUrl: "",
+        logoUrl: "",
       });
     },
     onError: (error) => {
@@ -46,6 +50,8 @@ export default function AddSeriesForm() {
         descriptionAr: formData.descriptionAr,
         genre: formData.genre,
         totalSeasons: formData.totalSeasons,
+        bannerUrl: formData.bannerUrl || undefined,
+        logoUrl: formData.logoUrl || undefined,
       });
     } finally {
       setIsLoading(false);
@@ -109,11 +115,37 @@ export default function AddSeriesForm() {
         </div>
       </div>
 
+      <div>
+        <label className="block text-sm font-medium mb-2">رابط البانر (الإعلان)</label>
+        <Input
+          placeholder="أدخل رابط صورة البانر"
+          value={formData.bannerUrl}
+          onChange={(e) =>
+            setFormData({ ...formData, bannerUrl: e.target.value })
+          }
+          disabled={isLoading}
+        />
+        <p className="text-xs text-muted-foreground mt-1">الصورة التي تظهر فوق الفيديو</p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-2">رابط اللوقو</label>
+        <Input
+          placeholder="أدخل رابط صورة اللوقو"
+          value={formData.logoUrl}
+          onChange={(e) =>
+            setFormData({ ...formData, logoUrl: e.target.value })
+          }
+          disabled={isLoading}
+        />
+        <p className="text-xs text-muted-foreground mt-1">الصورة التي تظهر تحت البانر</p>
+      </div>
+
 
 
       <Button
         type="submit"
-        disabled={isLoading}
+        disabled={isLoading || !formData.titleAr.trim()}
         className="w-full"
       >
         {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
