@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Play, AlertCircle, Settings } from "lucide-react";
+import { Play, ChevronLeft, ChevronRight, Heart, AlertCircle, Settings } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Home() {
@@ -11,8 +11,6 @@ export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
   const [scrollY, setScrollY] = useState(0);
-  const [touchStart, setTouchStart] = useState(0);
-  const [touchEnd, setTouchEnd] = useState(0);
   const { data: user } = trpc.auth.me.useQuery();
 
   // استدعاء البيانات الديناميكية
@@ -74,20 +72,6 @@ export default function Home() {
   // حساب Parallax offset
   const parallaxOffset = scrollY * 0.5;
 
-  // معالج Swipe
-  const handleSwipe = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 50;
-    const isRightSwipe = distance < -50;
-
-    if (isLeftSwipe && sliderSeries.length > 1) {
-      setCurrentSlide((prev) => (prev + 1) % sliderSeries.length);
-    } else if (isRightSwipe && sliderSeries.length > 1) {
-      setCurrentSlide((prev) => (prev - 1 + sliderSeries.length) % sliderSeries.length);
-    }
-  };
-
   return (
     <div className="flex-1 pb-20">
       {/* زر Admin Panel - للمسؤولين فقط */}
@@ -107,14 +91,7 @@ export default function Home() {
       {sliderSeries && sliderSeries.length > 0 && currentSeries ? (
         <div className="relative w-full overflow-hidden">
           {/* السلايدر - مناسب للموبايل والويب */}
-          <div 
-            className="relative w-full h-[350px] sm:h-[450px] md:h-[550px] lg:h-[650px] overflow-hidden cursor-grab active:cursor-grabbing"
-            onTouchStart={(e) => setTouchStart(e.targetTouches[0].clientX)}
-            onTouchEnd={(e) => {
-              setTouchEnd(e.changedTouches[0].clientX);
-              handleSwipe();
-            }}
-          >
+          <div className="relative w-full h-[350px] sm:h-[450px] md:h-[550px] lg:h-[650px] overflow-hidden">
             {/* الخلفية مع Parallax */}
             <div
               className="absolute inset-0 bg-cover bg-center transition-all duration-500"
@@ -175,93 +152,115 @@ export default function Home() {
               </div>
             </div>
 
-            {/* مؤشرات الشرائح فقط */}
+            {/* أزرار التنقل */}
             {sliderSeries.length > 1 && (
-              <div className="absolute bottom-24 sm:bottom-32 md:bottom-40 left-1/2 -translate-x-1/2 z-10 flex gap-2">
-                {sliderSeries.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentSlide(index)}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      index === currentSlide ? "bg-primary w-6 sm:w-8" : "bg-white/50"
-                    }`}
-                    aria-label={`اذهب إلى الشريحة ${index + 1}`}
-                  />
-                ))}
-              </div>
+              <>
+                <button
+                  onClick={() => setCurrentSlide((prev) => (prev - 1 + sliderSeries.length) % sliderSeries.length)}
+                  className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 bg-white/20 hover:bg-white/40 text-white p-1.5 sm:p-2 rounded-full transition-all"
+                  aria-label="الشريحة السابقة"
+                >
+                  <ChevronRight className="w-5 sm:w-6 h-5 sm:h-6" />
+                </button>
+                <button
+                  onClick={() => setCurrentSlide((prev) => (prev + 1) % sliderSeries.length)}
+                  className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 bg-white/20 hover:bg-white/40 text-white p-1.5 sm:p-2 rounded-full transition-all"
+                  aria-label="الشريحة التالية"
+                >
+                  <ChevronLeft className="w-5 sm:w-6 h-5 sm:h-6" />
+                </button>
+
+                {/* مؤشرات الشرائح */}
+                <div className="absolute bottom-24 sm:bottom-32 md:bottom-40 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+                  {sliderSeries.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentSlide(index)}
+                      className={`w-2 h-2 rounded-full transition-all ${
+                        index === currentSlide ? "bg-primary w-6 sm:w-8" : "bg-white/50"
+                      }`}
+                      aria-label={`اذهب إلى الشريحة ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>
       ) : null}
 
-      {/* القسم الثاني: المسلسلات الجديدة - عمودي */}
+      {/* القسم الثاني: المسلسلات الجديدة - آخر 6 مسلسلات */}
       {latestSeries && latestSeries.length > 0 && (
         <section className="px-3 sm:px-6 md:px-10 lg:px-16 py-8 sm:py-12 bg-background">
           <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-4 sm:mb-6">المسلسلات الجديدة</h3>
-          {/* عرض عمودي - grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
-            {latestSeries.map((series: any) => (
-              <Link key={series.id} href={`/series/${series.id}`}>
-                <div className="group cursor-pointer">
-                  <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full">
-                    <CardContent className="p-0">
-                      {/* صورة المسلسل - طولي */}
-                      <div className="relative overflow-hidden bg-muted aspect-[2/3] w-full">
-                        <img
-                          src={series.posterUrl}
-                          alt={series.titleAr}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                        />
-                        {/* overlay عند التمرير */}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                          <Play className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+          {/* عرض أفقي - scroll horizontal */}
+          <div className="overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2 sm:gap-3 md:gap-4 pb-2">
+              {latestSeries.map((series: any) => (
+                <Link key={series.id} href={`/series/${series.id}`}>
+                  <div className="group cursor-pointer flex-shrink-0">
+                    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full">
+                      <CardContent className="p-0">
+                        {/* صورة المسلسل - حجم صغير */}
+                        <div className="relative overflow-hidden bg-muted aspect-[2/3] w-24 sm:w-28 md:w-32 lg:w-36">
+                          <img
+                            src={series.posterUrl}
+                            alt={series.titleAr}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                          {/* overlay عند التمرير */}
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                            <Play className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                          </div>
                         </div>
-                      </div>
-                      {/* معلومات المسلسل */}
-                      <div className="p-2 bg-card">
-                        <h4 className="font-semibold text-xs sm:text-sm text-card-foreground truncate">
-                          {series.titleAr}
-                        </h4>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </Link>
-            ))}
+                        {/* معلومات المسلسل */}
+                        <div className="p-2 bg-card hidden sm:block">
+                          <h4 className="font-semibold text-xs text-card-foreground truncate">
+                            {series.titleAr}
+                          </h4>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
       )}
 
-      {/* القسم الثالث: المسلسلات الأفضل تقييماً - عمودي */}
+      {/* القسم الثالث: المسلسلات الأفضل تقييماً */}
       {topRatedSeries && topRatedSeries.length > 0 && (
         <section className="px-3 sm:px-6 md:px-10 lg:px-16 py-8 sm:py-12 bg-muted/50">
           <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-4 sm:mb-6">الأفضل تقييماً</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
-            {topRatedSeries.map((series: any) => (
-              <Link key={series.id} href={`/series/${series.id}`}>
-                <div className="group cursor-pointer">
-                  <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full">
-                    <CardContent className="p-0">
-                      <div className="relative overflow-hidden bg-muted aspect-[2/3] w-full">
-                        <img
-                          src={series.posterUrl}
-                          alt={series.titleAr}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                          <Play className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+          <div className="overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2 sm:gap-3 md:gap-4 pb-2">
+              {topRatedSeries.map((series: any) => (
+                <Link key={series.id} href={`/series/${series.id}`}>
+                  <div className="group cursor-pointer flex-shrink-0">
+                    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full">
+                      <CardContent className="p-0">
+                        <div className="relative overflow-hidden bg-muted aspect-[2/3] w-24 sm:w-28 md:w-32 lg:w-36">
+                          <img
+                            src={series.posterUrl}
+                            alt={series.titleAr}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                            <Play className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                          </div>
                         </div>
-                      </div>
-                      <div className="p-2 bg-card">
-                        <h4 className="font-semibold text-xs sm:text-sm text-card-foreground truncate">
-                          {series.titleAr}
-                        </h4>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </Link>
-            ))}
+                        <div className="p-2 bg-card hidden sm:block">
+                          <h4 className="font-semibold text-xs text-card-foreground truncate">
+                            {series.titleAr}
+                          </h4>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
       )}
