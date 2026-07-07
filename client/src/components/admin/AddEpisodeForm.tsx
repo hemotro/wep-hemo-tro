@@ -2,17 +2,12 @@ import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Upload } from "lucide-react";
 
 interface FormData {
   seriesId: number;
-  season: number;
   episodeNumber: number;
-  title: string;
   titleAr: string;
-  description?: string;
-  descriptionAr?: string;
 }
 
 interface Series {
@@ -24,16 +19,11 @@ interface Series {
 export default function AddEpisodeForm() {
   const [formData, setFormData] = useState<FormData>({
     seriesId: 0,
-    season: 1,
     episodeNumber: 1,
-    title: "",
     titleAr: "",
-    description: "",
-    descriptionAr: "",
   });
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [series, setSeries] = useState<Series[]>([]);
@@ -57,15 +47,10 @@ export default function AddEpisodeForm() {
       
       setFormData({
         seriesId: 0,
-        season: 1,
         episodeNumber: 1,
-        title: "",
         titleAr: "",
-        description: "",
-        descriptionAr: "",
       });
       setVideoFile(null);
-      setUploadProgress(0);
     },
     onError: (error) => {
       console.error("خطأ:", error.message);
@@ -89,34 +74,18 @@ export default function AddEpisodeForm() {
     e.preventDefault();
     setErrorMessage("");
 
-    // التحقق من جميع الحقول المطلوبة
     if (!formData.seriesId) {
-      setErrorMessage("❌ يجب اختيار مسلسل");
+      setErrorMessage("❌ اختر مسلسل");
       return;
     }
 
     if (!formData.titleAr.trim()) {
-      setErrorMessage("❌ يجب إدخال اسم الحلقة بالعربية");
-      return;
-    }
-
-    if (!formData.title.trim()) {
-      setErrorMessage("❌ يجب إدخال اسم الحلقة بالإنجليزية");
+      setErrorMessage("❌ أدخل اسم الحلقة");
       return;
     }
 
     if (!videoFile) {
-      setErrorMessage("❌ يجب اختيار ملف فيديو");
-      return;
-    }
-
-    if (formData.season < 1) {
-      setErrorMessage("❌ رقم الموسم يجب أن يكون أكبر من 0");
-      return;
-    }
-
-    if (formData.episodeNumber < 1) {
-      setErrorMessage("❌ رقم الحلقة يجب أن يكون أكبر من 0");
+      setErrorMessage("❌ اختر ملف الفيديو");
       return;
     }
 
@@ -125,17 +94,10 @@ export default function AddEpisodeForm() {
       const formDataToSend = new FormData();
       formDataToSend.append("file", videoFile);
       formDataToSend.append("titleAr", formData.titleAr);
-      formDataToSend.append("title", formData.title);
+      formDataToSend.append("title", formData.titleAr);
       formDataToSend.append("seriesId", formData.seriesId.toString());
-      formDataToSend.append("season", formData.season.toString());
+      formDataToSend.append("season", "1");
       formDataToSend.append("episodeNumber", formData.episodeNumber.toString());
-      
-      if (formData.description) {
-        formDataToSend.append("description", formData.description);
-      }
-      if (formData.descriptionAr) {
-        formDataToSend.append("descriptionAr", formData.descriptionAr);
-      }
 
       const uploadResponse = await fetch("/api/upload-video", {
         method: "POST",
@@ -149,20 +111,17 @@ export default function AddEpisodeForm() {
 
       const uploadData = await uploadResponse.json();
 
-      // إنشاء الحلقة مع Telegram كنوع الفيديو
       await createEpisodeMutation.mutateAsync({
         seriesId: formData.seriesId,
-        season: formData.season,
+        season: 1,
         episodeNumber: formData.episodeNumber,
         titleAr: formData.titleAr,
-        title: formData.title,
-        descriptionAr: formData.descriptionAr,
-        description: formData.description,
+        title: formData.titleAr,
         videoUrl: uploadData.fileId,
         videoType: "telegram",
       });
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "حدث خطأ غير متوقع";
+      const errorMsg = error instanceof Error ? error.message : "حدث خطأ";
       setErrorMessage(`❌ ${errorMsg}`);
       console.error("Error:", error);
     } finally {
@@ -188,9 +147,9 @@ export default function AddEpisodeForm() {
 
       {/* اختيار المسلسل */}
       <div>
-        <label className="block text-sm font-medium mb-2">🎬 اختر المسلسل *</label>
+        <label className="block text-sm font-medium mb-2">المسلسل</label>
         {seriesLoading ? (
-          <div className="text-center py-4 text-muted-foreground">جاري تحميل المسلسلات...</div>
+          <div className="text-center py-4 text-muted-foreground">جاري التحميل...</div>
         ) : (
           <select
             value={formData.seriesId}
@@ -207,43 +166,35 @@ export default function AddEpisodeForm() {
             <option value="0">-- اختر مسلسل --</option>
             {series.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.titleAr} {s.title ? `(${s.title})` : ""}
+                {s.titleAr}
               </option>
             ))}
           </select>
         )}
       </div>
 
-      {/* عرض المسلسل المختار */}
       {selectedSeries && (
         <div className="bg-primary/10 border border-primary rounded-md p-3">
-          <p className="text-sm">
-            <span className="font-medium">المسلسل المختار:</span> {selectedSeries.titleAr}
-          </p>
+          <p className="text-sm">{selectedSeries.titleAr}</p>
         </div>
       )}
 
-      {/* الموسم ورقم الحلقة */}
+      {/* اسم الحلقة ورقم الحلقة */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium mb-2">الموسم *</label>
+          <label className="block text-sm font-medium mb-2">اسم الحلقة</label>
           <Input
-            type="number"
-            placeholder="1"
-            min="1"
-            value={formData.season}
+            placeholder="مثال: الحلقة الأولى"
+            value={formData.titleAr}
             onChange={(e) =>
-              setFormData({
-                ...formData,
-                season: parseInt(e.target.value) || 1,
-              })
+              setFormData({ ...formData, titleAr: e.target.value })
             }
             disabled={isLoading}
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-2">رقم الحلقة *</label>
+          <label className="block text-sm font-medium mb-2">رقم الحلقة</label>
           <Input
             type="number"
             placeholder="1"
@@ -261,65 +212,9 @@ export default function AddEpisodeForm() {
         </div>
       </div>
 
-      {/* اسم الحلقة بالعربية */}
-      <div>
-        <label className="block text-sm font-medium mb-2">اسم الحلقة بالعربية *</label>
-        <Input
-          placeholder="أدخل اسم الحلقة بالعربية"
-          value={formData.titleAr}
-          onChange={(e) =>
-            setFormData({ ...formData, titleAr: e.target.value })
-          }
-          disabled={isLoading}
-          required
-        />
-      </div>
-
-      {/* اسم الحلقة بالإنجليزية */}
-      <div>
-        <label className="block text-sm font-medium mb-2">اسم الحلقة بالإنجليزية *</label>
-        <Input
-          placeholder="أدخل اسم الحلقة بالإنجليزية"
-          value={formData.title}
-          onChange={(e) =>
-            setFormData({ ...formData, title: e.target.value })
-          }
-          disabled={isLoading}
-          required
-        />
-      </div>
-
-      {/* الوصف بالعربية (اختياري) */}
-      <div>
-        <label className="block text-sm font-medium mb-2">الوصف بالعربية (اختياري)</label>
-        <Textarea
-          placeholder="أدخل وصف الحلقة بالعربية"
-          value={formData.descriptionAr || ""}
-          onChange={(e) =>
-            setFormData({ ...formData, descriptionAr: e.target.value })
-          }
-          disabled={isLoading}
-          rows={3}
-        />
-      </div>
-
-      {/* الوصف بالإنجليزية (اختياري) */}
-      <div>
-        <label className="block text-sm font-medium mb-2">الوصف بالإنجليزية (اختياري)</label>
-        <Textarea
-          placeholder="أدخل وصف الحلقة بالإنجليزية"
-          value={formData.description || ""}
-          onChange={(e) =>
-            setFormData({ ...formData, description: e.target.value })
-          }
-          disabled={isLoading}
-          rows={3}
-        />
-      </div>
-
       {/* رفع الفيديو */}
       <div>
-        <label className="block text-sm font-medium mb-2">📤 رفع الفيديو *</label>
+        <label className="block text-sm font-medium mb-2">رفع الفيديو</label>
         <div className="border-2 border-dashed border-primary rounded-lg p-6 text-center hover:bg-primary/5 transition-colors">
           <input
             type="file"
@@ -336,42 +231,26 @@ export default function AddEpisodeForm() {
           >
             <Upload className="w-8 h-8 text-primary" />
             <span className="text-sm font-medium">
-              {videoFile ? videoFile.name : "اضغط لاختيار ملف الفيديو"}
+              {videoFile ? videoFile.name : "اضغط لاختيار الفيديو"}
             </span>
             {videoFile && (
               <span className="text-xs text-muted-foreground">
-                {(videoFile.size / 1024 / 1024).toFixed(2)} MB / 500 MB
+                {(videoFile.size / 1024 / 1024).toFixed(2)} MB
               </span>
             )}
-            <span className="text-xs text-muted-foreground mt-2">
-              الصيغ المدعومة: MP4, MKV, AVI, MOV
-            </span>
           </label>
         </div>
       </div>
 
-      {uploadProgress > 0 && uploadProgress < 100 && (
-        <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-          <div
-            className="bg-primary h-2 rounded-full transition-all duration-300"
-            style={{ width: `${uploadProgress}%` }}
-          />
-        </div>
-      )}
-
       <Button
         type="submit"
-        disabled={isLoading || !videoFile || !formData.seriesId || !formData.titleAr || !formData.title}
+        disabled={isLoading || !videoFile || !formData.seriesId || !formData.titleAr}
         className="w-full"
         size="lg"
       >
         {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-        {isLoading ? "جاري الرفع..." : "✅ إضافة الحلقة"}
+        {isLoading ? "جاري الرفع..." : "إضافة الحلقة"}
       </Button>
-
-      <div className="text-xs text-muted-foreground text-center">
-        * الحقول المطلوبة
-      </div>
     </form>
   );
 }
