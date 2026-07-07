@@ -7,6 +7,7 @@ import { Loader2, Upload } from "lucide-react";
 
 interface FormData {
   seriesId: number;
+  season: number;
   episodeNumber: number;
   titleAr: string;
 }
@@ -20,6 +21,7 @@ interface Series {
 export default function AddEpisodeForm() {
   const [formData, setFormData] = useState<FormData>({
     seriesId: 0,
+    season: 1,
     episodeNumber: 1,
     titleAr: "",
   });
@@ -47,6 +49,7 @@ export default function AddEpisodeForm() {
       
       setFormData({
         seriesId: 0,
+        season: 1,
         episodeNumber: 1,
         titleAr: "",
       });
@@ -110,6 +113,7 @@ export default function AddEpisodeForm() {
       // إنشاء الحلقة مع Telegram كنوع الفيديو
       await createEpisodeMutation.mutateAsync({
         seriesId: formData.seriesId,
+        season: formData.season,
         episodeNumber: formData.episodeNumber,
         titleAr: formData.titleAr,
         videoUrl: uploadData.url,
@@ -168,20 +172,37 @@ export default function AddEpisodeForm() {
         </div>
       )}
 
-      <div>
-        <label className="block text-sm font-medium mb-2">رقم الحلقة</label>
-        <Input
-          type="number"
-          placeholder="1"
-          value={formData.episodeNumber}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              episodeNumber: parseInt(e.target.value) || 1,
-            })
-          }
-          disabled={isLoading}
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium mb-2">الموسم</label>
+          <Input
+            type="number"
+            placeholder="1"
+            value={formData.season}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                season: parseInt(e.target.value) || 1,
+              })
+            }
+            disabled={isLoading}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-2">رقم الحلقة</label>
+          <Input
+            type="number"
+            placeholder="1"
+            value={formData.episodeNumber}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                episodeNumber: parseInt(e.target.value) || 1,
+              })
+            }
+            disabled={isLoading}
+          />
+        </div>
       </div>
 
       <div>
