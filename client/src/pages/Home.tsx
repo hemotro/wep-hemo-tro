@@ -194,19 +194,19 @@ export default function Home() {
         </div>
       ) : null}
 
-      {/* القسم الثاني: المسلسلات الجديدة - عمودي */}
+      {/* القسم الثاني: المسلسلات الجديدة - أفقي */}
       {latestSeries && latestSeries.length > 0 && (
         <section className="px-3 sm:px-6 md:px-10 lg:px-16 py-8 sm:py-12 bg-background">
           <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-4 sm:mb-6">المسلسلات الجديدة</h3>
-          {/* عرض عمودي - grid */}
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
+          {/* عرض أفقي - Horizontal Scroll */}
+          <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-2 scrollbar-hide">
             {latestSeries.map((series: any) => (
               <Link key={series.id} href={`/series/${series.id}`}>
                 <div className="group cursor-pointer">
-                  <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full">
+                  <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex-shrink-0">
                     <CardContent className="p-0">
                       {/* صورة المسلسل - طولي */}
-                      <div className="relative overflow-hidden bg-muted aspect-[2/3] w-full">
+                      <div className="relative overflow-hidden bg-muted aspect-[2/3] w-32 sm:w-40 md:w-48">
                         <img
                           src={series.posterUrl}
                           alt={series.titleAr}
@@ -218,7 +218,7 @@ export default function Home() {
                         </div>
                       </div>
                       {/* معلومات المسلسل */}
-                      <div className="p-2 bg-card">
+                      <div className="p-2 bg-card min-w-32 sm:min-w-40 md:min-w-48">
                         <h4 className="font-semibold text-xs sm:text-sm text-card-foreground truncate">
                           {series.titleAr}
                         </h4>
@@ -232,11 +232,11 @@ export default function Home() {
         </section>
       )}
 
-      {/* القسم الثالث: المسلسلات الأفضل تقييماً - عمودي */}
+      {/* القسم الثالث: المسلسلات الأفضل تقييماً - أفقي */}
       {topRatedSeries && topRatedSeries.length > 0 && (
         <section className="px-3 sm:px-6 md:px-10 lg:px-16 py-8 sm:py-12 bg-muted/50">
           <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-4 sm:mb-6">الأفضل تقييماً</h3>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
+          <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-2 scrollbar-hide">
             {topRatedSeries.map((series: any) => (
               <Link key={series.id} href={`/series/${series.id}`}>
                 <div className="group cursor-pointer">
