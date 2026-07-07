@@ -103,22 +103,9 @@ export default function Home() {
         </div>
       )}
 
-      {/* السلايدر الرئيسي */}
+      {/* السلايدر الرئيسي - تصميم جديد يناسب الهاتف */}
       {sliderSeries && sliderSeries.length > 0 && currentSeries ? (
         <div className="relative w-full overflow-hidden">
-          {/* شعار الموقع فوق السلايدر */}
-          <div className="relative z-20 px-4 pt-4 bg-background/50 backdrop-blur-sm">
-            <div className="flex items-center justify-center">
-              {currentSeries.logoUrl && (
-                <img
-                  src={currentSeries.logoUrl}
-                  alt="Logo"
-                  className="h-8 sm:h-10 md:h-12 object-contain"
-                />
-              )}
-            </div>
-          </div>
-
           {/* السلايدر - مناسب للموبايل والويب */}
           <div 
             className="relative w-full h-[350px] sm:h-[450px] md:h-[550px] lg:h-[650px] overflow-hidden cursor-grab active:cursor-grabbing"
@@ -144,6 +131,17 @@ export default function Home() {
             {/* المحتوى - في الأسفل */}
             <div className="absolute bottom-0 left-0 right-0 px-3 sm:px-6 md:px-10 lg:px-16 pb-6 sm:pb-8 md:pb-10">
               <div className="flex flex-col gap-4">
+                {/* اللوقو */}
+                {currentSeries.logoUrl && (
+                  <div className="flex items-center">
+                    <img
+                      src={currentSeries.logoUrl}
+                      alt="Logo"
+                      className="h-12 sm:h-16 md:h-20 object-contain"
+                    />
+                  </div>
+                )}
+
                 {/* التصنيف */}
                 <div className="flex gap-2 flex-wrap">
                   {currentSeries.genre && (
@@ -177,7 +175,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* مؤشرات الشرائح */}
+            {/* مؤشرات الشرائح فقط */}
             {sliderSeries.length > 1 && (
               <div className="absolute bottom-24 sm:bottom-32 md:bottom-40 left-1/2 -translate-x-1/2 z-10 flex gap-2">
                 {sliderSeries.map((_, index) => (
@@ -196,26 +194,30 @@ export default function Home() {
         </div>
       ) : null}
 
-      {/* القسم الثاني: المسلسلات الجديدة */}
+      {/* القسم الثاني: المسلسلات الجديدة - عمودي */}
       {latestSeries && latestSeries.length > 0 && (
         <section className="px-3 sm:px-6 md:px-10 lg:px-16 py-8 sm:py-12 bg-background">
           <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-4 sm:mb-6">المسلسلات الجديدة</h3>
+          {/* عرض عمودي - grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
             {latestSeries.map((series: any) => (
               <Link key={series.id} href={`/series/${series.id}`}>
                 <div className="group cursor-pointer">
                   <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full">
                     <CardContent className="p-0">
-                      <div className="relative overflow-hidden bg-muted aspect-video w-full">
+                      {/* صورة المسلسل - طولي */}
+                      <div className="relative overflow-hidden bg-muted aspect-[2/3] w-full">
                         <img
                           src={series.posterUrl}
                           alt={series.titleAr}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
+                        {/* overlay عند التمرير */}
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                           <Play className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                         </div>
                       </div>
+                      {/* معلومات المسلسل */}
                       <div className="p-2 bg-card">
                         <h4 className="font-semibold text-xs sm:text-sm text-card-foreground truncate">
                           {series.titleAr}
@@ -230,7 +232,7 @@ export default function Home() {
         </section>
       )}
 
-      {/* القسم الثالث: المسلسلات الأفضل تقييماً */}
+      {/* القسم الثالث: المسلسلات الأفضل تقييماً - عمودي */}
       {topRatedSeries && topRatedSeries.length > 0 && (
         <section className="px-3 sm:px-6 md:px-10 lg:px-16 py-8 sm:py-12 bg-muted/50">
           <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-4 sm:mb-6">الأفضل تقييماً</h3>
@@ -240,7 +242,7 @@ export default function Home() {
                 <div className="group cursor-pointer">
                   <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full">
                     <CardContent className="p-0">
-                      <div className="relative overflow-hidden bg-muted aspect-video w-full">
+                      <div className="relative overflow-hidden bg-muted aspect-[2/3] w-full">
                         <img
                           src={series.posterUrl}
                           alt={series.titleAr}
