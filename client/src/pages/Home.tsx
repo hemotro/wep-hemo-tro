@@ -67,7 +67,7 @@ export default function Home() {
   }
 
   const currentSeries = sliderSeries[currentSlide];
-  const currentBanner = currentSeries?.posterUrl;
+  const currentBanner = currentSeries?.bannerUrl || currentSeries?.posterUrl;
 
   // حساب Parallax offset
   const parallaxOffset = scrollY * 0.5;
@@ -87,39 +87,68 @@ export default function Home() {
         </div>
       )}
 
-      {/* السلايدر الرئيسي - آخر 4 مسلسلات */}
+      {/* السلايدر الرئيسي - تصميم جديد يناسب الهاتف */}
       {sliderSeries && sliderSeries.length > 0 && currentSeries ? (
         <div className="relative w-full overflow-hidden">
           {/* السلايدر - مناسب للموبايل والويب */}
-          <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] overflow-hidden">
+          <div className="relative w-full h-[350px] sm:h-[450px] md:h-[550px] lg:h-[650px] overflow-hidden">
             {/* الخلفية مع Parallax */}
             <div
               className="absolute inset-0 bg-cover bg-center transition-all duration-500"
               style={{
                 backgroundImage: `url('${currentBanner}')`,
                 backgroundPosition: `center ${parallaxOffset}px`,
-                filter: "brightness(0.4)",
+                filter: "brightness(0.3)",
               }}
             />
 
             {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
 
-            {/* المحتوى */}
-            <div className="relative h-full flex flex-col justify-center px-3 sm:px-6 md:px-10 lg:px-16">
-              <div className="max-w-xl">
-                <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2 drop-shadow-lg line-clamp-2">
+            {/* المحتوى - في الأسفل */}
+            <div className="absolute bottom-0 left-0 right-0 px-3 sm:px-6 md:px-10 lg:px-16 pb-6 sm:pb-8 md:pb-10">
+              <div className="flex flex-col gap-4">
+                {/* اللوقو */}
+                {currentSeries.logoUrl && (
+                  <div className="flex items-center">
+                    <img
+                      src={currentSeries.logoUrl}
+                      alt="Logo"
+                      className="h-12 sm:h-16 md:h-20 object-contain"
+                    />
+                  </div>
+                )}
+
+                {/* التصنيف */}
+                <div className="flex gap-2 flex-wrap">
+                  {currentSeries.genre && (
+                    <span className="inline-block px-3 py-1 bg-primary/80 text-primary-foreground text-xs sm:text-sm rounded-full">
+                      {currentSeries.genre}
+                    </span>
+                  )}
+                </div>
+
+                {/* العنوان */}
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white drop-shadow-lg line-clamp-2">
                   {currentSeries.titleAr}
                 </h2>
-                <p className="text-primary text-xs sm:text-sm md:text-base mb-3 sm:mb-4 drop-shadow-lg line-clamp-1">
-                  {(currentSeries as any).genre || ""}
-                </p>
-                <Link href={`/series/${currentSeries.id}`}>
-                  <Button className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:text-base py-2 sm:py-3 px-6 sm:px-8 rounded-lg">
-                    <Play className="w-4 sm:w-5 h-4 sm:h-5 ml-2" />
-                    شاهد الآن
-                  </Button>
-                </Link>
+
+                {/* الوصف */}
+                {currentSeries.descriptionAr && (
+                  <p className="text-xs sm:text-sm md:text-base text-white/80 line-clamp-2 max-w-2xl">
+                    {currentSeries.descriptionAr}
+                  </p>
+                )}
+
+                {/* زر شاهد الآن */}
+                <div className="flex gap-3 pt-2">
+                  <Link href={`/series/${currentSeries.id}`}>
+                    <Button className="bg-primary hover:bg-primary/90 text-primary-foreground text-sm sm:text-base py-2 sm:py-3 px-6 sm:px-8 rounded-lg flex items-center gap-2">
+                      <Play className="w-4 sm:w-5 h-4 sm:h-5" />
+                      شاهد الآن
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </div>
 
@@ -142,7 +171,7 @@ export default function Home() {
                 </button>
 
                 {/* مؤشرات الشرائح */}
-                <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+                <div className="absolute bottom-24 sm:bottom-32 md:bottom-40 left-1/2 -translate-x-1/2 z-10 flex gap-2">
                   {sliderSeries.map((_, index) => (
                     <button
                       key={index}
@@ -200,11 +229,10 @@ export default function Home() {
         </section>
       )}
 
-      {/* القسم الثالث: الأعلى تقييماً - أفضل 5 مسلسلات */}
+      {/* القسم الثالث: المسلسلات الأفضل تقييماً */}
       {topRatedSeries && topRatedSeries.length > 0 && (
-        <section className="px-3 sm:px-6 md:px-10 lg:px-16 py-8 sm:py-12 bg-muted/30">
-          <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-4 sm:mb-6">الأعلى تقييماً</h3>
-          {/* عرض أفقي - scroll horizontal */}
+        <section className="px-3 sm:px-6 md:px-10 lg:px-16 py-8 sm:py-12 bg-muted/50">
+          <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-4 sm:mb-6">الأفضل تقييماً</h3>
           <div className="overflow-x-auto scrollbar-hide">
             <div className="flex gap-2 sm:gap-3 md:gap-4 pb-2">
               {topRatedSeries.map((series: any) => (
@@ -212,27 +240,20 @@ export default function Home() {
                   <div className="group cursor-pointer flex-shrink-0">
                     <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full">
                       <CardContent className="p-0">
-                        {/* صورة المسلسل - حجم صغير */}
                         <div className="relative overflow-hidden bg-muted aspect-[2/3] w-24 sm:w-28 md:w-32 lg:w-36">
                           <img
                             src={series.posterUrl}
                             alt={series.titleAr}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                           />
-                          {/* overlay عند التمرير */}
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                             <Play className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                           </div>
                         </div>
-                        {/* معلومات المسلسل */}
                         <div className="p-2 bg-card hidden sm:block">
                           <h4 className="font-semibold text-xs text-card-foreground truncate">
                             {series.titleAr}
                           </h4>
-                          <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                            <Heart className="w-3 h-3 fill-red-500 text-red-500" />
-                            <span>محبوب</span>
-                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -243,24 +264,6 @@ export default function Home() {
           </div>
         </section>
       )}
-
-      {/* رسالة عندما لا توجد بيانات */}
-      {(!latestSeries || latestSeries.length === 0) && (
-        <div className="flex-1 pb-20 flex items-center justify-center min-h-[400px]">
-          <p className="text-muted-foreground text-lg">لا توجد مسلسلات متاحة حالياً</p>
-        </div>
-      )}
-
-      {/* إضافة CSS مخصص لإخفاء scrollbar */}
-      <style>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
     </div>
   );
 }
