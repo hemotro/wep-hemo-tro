@@ -84,14 +84,14 @@ export default function Search() {
       {/* نتائج البحث */}
       <div className="px-4 py-6">
         {filteredSeries.length > 0 ? (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
             {filteredSeries.map((series: any) => (
               <button
                 key={series.id}
                 onClick={() => setLocation(`/series/${series.id}`)}
                 className="group text-right"
               >
-                <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-muted mb-2">
+                <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden bg-muted mb-2">
                   {series.posterUrl ? (
                     <img
                       src={series.posterUrl}
