@@ -102,7 +102,7 @@ async function startServer() {
 
       res.json({
         success: true,
-        url: uploadResult.fileId,
+        fileId: uploadResult.fileId,
         messageId: uploadResult.messageId,
       });
     } catch (error) {

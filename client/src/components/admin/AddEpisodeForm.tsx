@@ -111,6 +111,11 @@ export default function AddEpisodeForm() {
 
       const uploadData = await uploadResponse.json();
 
+      // التحقق من أن الفيديو رُفع بنجاح
+      if (!uploadData.fileId) {
+        throw new Error(uploadData.error || "فشل رفع الفيديو إلى Telegram");
+      }
+
       await createEpisodeMutation.mutateAsync({
         seriesId: formData.seriesId,
         season: 1,
