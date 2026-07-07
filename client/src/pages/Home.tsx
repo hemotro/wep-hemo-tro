@@ -203,25 +203,19 @@ export default function Home() {
             {latestSeries.map((series: any) => (
               <Link key={series.id} href={`/series/${series.id}`}>
                 <div className="group cursor-pointer">
-                  <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex-shrink-0">
+                  <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex-shrink-0 border-0">
                     <CardContent className="p-0">
-                      {/* صورة المسلسل - طولي */}
+                      {/* صورة المسلسل - طولي فقط */}
                       <div className="relative overflow-hidden bg-muted aspect-[2/3] w-32 sm:w-40 md:w-48">
                         <img
                           src={series.posterUrl}
                           alt={series.titleAr}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
-                        {/* overlay عند التمرير */}
+                        {/* overlay عند التمرر */}
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                           <Play className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                         </div>
-                      </div>
-                      {/* معلومات المسلسل */}
-                      <div className="p-2 bg-card min-w-32 sm:min-w-40 md:min-w-48">
-                        <h4 className="font-semibold text-xs sm:text-sm text-card-foreground truncate">
-                          {series.titleAr}
-                        </h4>
                       </div>
                     </CardContent>
                   </Card>
@@ -240,9 +234,9 @@ export default function Home() {
             {topRatedSeries.map((series: any) => (
               <Link key={series.id} href={`/series/${series.id}`}>
                 <div className="group cursor-pointer">
-                  <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full">
+                  <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex-shrink-0 border-0">
                     <CardContent className="p-0">
-                      <div className="relative overflow-hidden bg-muted aspect-[2/3] w-full">
+                      <div className="relative overflow-hidden bg-muted aspect-[2/3] w-32 sm:w-40 md:w-48">
                         <img
                           src={series.posterUrl}
                           alt={series.titleAr}
@@ -251,11 +245,6 @@ export default function Home() {
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                           <Play className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                         </div>
-                      </div>
-                      <div className="p-2 bg-card">
-                        <h4 className="font-semibold text-xs sm:text-sm text-card-foreground truncate">
-                          {series.titleAr}
-                        </h4>
                       </div>
                     </CardContent>
                   </Card>
